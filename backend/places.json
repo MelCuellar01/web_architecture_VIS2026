@@ -1,11 +1,48 @@
 [
   {
-    "id": "1774477666649",
-    "name": "Eiffel Tower",
-    "description": "It was amazing to see the Eiffel Tower at night!",
-    "location": "Paris, France",
-    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a8/Eiffel_Tower_from_the_Trocad%C3%A9ro%2C_20_January_2014.jpg",
-    "visitDate": "2024-12-05T00:00:00.000Z",
-    "createdAt": "2026-03-25T22:27:46.649Z"
+    "id": "place_1774482400960",
+    "city": "Tokyo",
+    "country": "Japan",
+    "entries": [
+      {
+        "id": "entry_1774482564099",
+        "title": "Senso-ji Temple",
+        "description": "A serene and stunning view at sunset.",
+        "category": "Landmark",
+        "rating": 5,
+        "visitDate": "2026-03-25T00:00:00.000Z",
+        "imageUrl": null,
+        "createdAt": "2026-03-25T23:49:24.099Z"
+      },
+      {
+        "id": "entry_1774483278577",
+        "title": "Disneyland!",
+        "description": "happiest place on earth. fun, but too crowded. ",
+        "category": "Park",
+        "rating": 3,
+        "visitDate": "2026-03-25T00:00:00.000Z",
+        "imageUrl": "/uploads/1774483278567-381664111-Screenshot 2026-03-26 at 01.00.15.png",
+        "createdAt": "2026-03-26T00:01:18.577Z"
+      }
+    ],
+    "createdAt": "2026-03-25T23:46:40.960Z"
+  },
+  {
+    "id": "place_1774482720039",
+    "city": "Barcelona",
+    "country": "Madrid",
+    "entries": [
+      {
+        "id": "entry_1774482970011",
+        "title": "Parque Güell",
+        "description": "Beautiful park, amazing city views <3",
+        "category": "Park",
+        "rating": 5,
+        "visitDate": "2026-03-03T00:00:00.000Z",
+        "imageUrl": "/uploads/1774482969996-776020963-Screenshot 2026-03-26 at 00.55.48.png",
+        "createdAt": "2026-03-25T23:56:10.011Z"
+      }
+    ],
+    "createdAt": "2026-03-25T23:52:00.040Z"
   }
 ]
