@@ -41,8 +41,36 @@
         "visitDate": "2026-03-03T00:00:00.000Z",
         "imageUrl": "/uploads/1774482969996-776020963-Screenshot 2026-03-26 at 00.55.48.png",
         "createdAt": "2026-03-25T23:56:10.011Z"
+      },
+      {
+        "id": "entry_1774888599785",
+        "title": "Casa Gaudi",
+        "description": "too crowded and entry was overpriced.",
+        "category": "Landmark",
+        "rating": 3,
+        "visitDate": "2026-03-12T00:00:00.000Z",
+        "imageUrl": "/uploads/1774888599773-399727173-Casa_BatlloÌ_(Antoni_Gaudi)_(interior),_43,_Passeig_de_GraÌcia,_Eixample,_Barcelona,_Catalonia,_Spain.jpg",
+        "createdAt": "2026-03-30T16:36:39.785Z"
       }
     ],
     "createdAt": "2026-03-25T23:52:00.040Z"
+  },
+  {
+    "id": "place_1774888641126",
+    "city": "Amsterdam",
+    "country": "Netherlands",
+    "entries": [
+      {
+        "id": "entry_1774889820073",
+        "title": "Best fries: Fabel Friet",
+        "description": "amazing french fries. good price 6€ for a decent amount. go between 1-2pm for shorter lines. ",
+        "category": "Restaurant",
+        "rating": 5,
+        "visitDate": "2026-02-04T00:00:00.000Z",
+        "imageUrl": "/uploads/1774889820067-263263023-2-frietjes-grachten-1.jpg",
+        "createdAt": "2026-03-30T16:57:00.073Z"
+      }
+    ],
+    "createdAt": "2026-03-30T16:37:21.126Z"
   }
 ]
