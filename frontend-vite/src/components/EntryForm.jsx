@@ -11,7 +11,7 @@ export default function EntryForm({ placeId, onAddEntry }) {
   const [imageFile, setImageFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const categories = ['General', 'Restaurant', 'Museum', 'Park', 'Landmark', 'Hotel', 'Event'];
+  const categories = ['General', 'Restaurant', 'Museum', 'Park', 'Landmark', 'Hotel', 'Event', 'Other'];
 
   const handleChange = (e) => {
     const { name, value } = e.target;

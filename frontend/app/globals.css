@@ -688,6 +688,7 @@ body {
 .badge.cat-landmark   { background: var(--amber); color: #fff; }
 .badge.cat-hotel      { background: #7c8aab; }
 .badge.cat-event      { background: #e056a0; }
+.badge.cat-other      { background: #95a5a6; }
 
 /* ---- Empty / Welcome ---- */
 .empty-state {

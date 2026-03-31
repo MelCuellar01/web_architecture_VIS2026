@@ -31,6 +31,7 @@ function badgeClass(category: string) {
     Landmark: "cat-landmark",
     Hotel: "cat-hotel",
     Event: "cat-event",
+    Other: "cat-other",
   };
   return `badge ${map[category] ?? ""}`;
 }
@@ -72,6 +73,7 @@ function EntryForm({
     "Landmark",
     "Hotel",
     "Event",
+    "Other",
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
