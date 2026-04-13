@@ -1730,6 +1730,7 @@ body {
   width: 100%;
   max-height: 360px;
   overflow: hidden;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
 .entry-modal-image img {
@@ -1966,13 +1967,61 @@ body {
   background: #e74c3c;
 }
 
-/* Modal carousel sizing */
+.entry-modal-image .carousel {
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  height: 100%;
+}
+
+.entry-modal-image .carousel-body {
+  gap: 0 !important;
+  height: 100%;
+  position: relative;
+}
+
+.entry-modal-image .carousel-frame {
+  border: none !important;
+  border-radius: 0 !important;
+  height: 100%;
+  width: 100%;
+}
+
 .entry-modal-image .carousel-img {
   height: 360px;
 }
 
-.entry-modal-image .carousel {
-  border-radius: 8px;
+.entry-modal-image .carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  background: none !important;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  padding: 0;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.4));
+}
+
+.entry-modal-image .carousel-arrow:hover {
+  color: #fff;
+}
+
+.entry-modal-image .carousel-left {
+  left: 0.75rem;
+}
+
+.entry-modal-image .carousel-right {
+  right: 0.75rem;
+}
+
+.entry-modal-image .carousel-dots {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding-top: 0;
 }
 
 .empty-state p {
