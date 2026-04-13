@@ -197,15 +197,13 @@ function ImageCarousel({ urls, alt }: { urls: string[]; alt: string }) {
 function EntryForm({
   placeId,
   onDone,
+  onCancel,
   editEntry,
-  trips,
-  onAddToTrip,
 }: {
   placeId: string;
   onDone: () => void;
+  onCancel?: () => void;
   editEntry?: Entry | null;
-  trips?: Trip[];
-  onAddToTrip?: (tripId: string, placeId: string, entryId: string) => void;
 }) {
   const [title, setTitle] = useState(editEntry?.title ?? "");
   const [description, setDescription] = useState(editEntry?.description ?? "");
@@ -219,7 +217,6 @@ function EntryForm({
   const [address, setAddress] = useState(editEntry?.address ?? "");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>(editEntry?.tags ?? []);
-  const [selectedTripIdForm, setSelectedTripIdForm] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>(
     editEntry ? getImageUrls(editEntry) : []
@@ -267,16 +264,10 @@ function EntryForm({
       ? `${API_BASE}/api/places/${encodeURIComponent(placeId)}/entries/${encodeURIComponent(editEntry.id)}`
       : `${API_BASE}/api/places/${encodeURIComponent(placeId)}/entries`;
 
-    const res = await fetch(url, {
+    await fetch(url, {
       method: editEntry ? "PUT" : "POST",
       body: formData,
     });
-
-    if (res.ok && selectedTripIdForm && onAddToTrip) {
-      const savedEntry = await res.json();
-      const entryId = editEntry ? editEntry.id : savedEntry.id;
-      onAddToTrip(selectedTripIdForm, placeId, entryId);
-    }
 
     setSubmitting(false);
     onDone();
@@ -375,17 +366,6 @@ function EntryForm({
           />
         </div>
       </div>
-      {trips && trips.length > 0 && (
-        <div className="form-group">
-          <label>Add to Trip (optional)</label>
-          <select value={selectedTripIdForm} onChange={(e) => setSelectedTripIdForm(e.target.value)}>
-            <option value="">— None —</option>
-            {trips.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-        </div>
-      )}
       {existingImages.length > 0 && (
         <div className="form-group">
           <label>Current Photos</label>
@@ -408,9 +388,16 @@ function EntryForm({
           onChange={(e) => setImageFiles(Array.from(e.target.files ?? []))}
         />
       </div>
-      <button type="submit" disabled={submitting} className="btn-primary">
-        {submitting ? "Saving…" : editEntry ? "Update Entry" : "Save Entry"}
-      </button>
+      <div className="form-actions">
+        {editEntry && onCancel && (
+          <button type="button" className="btn-secondary" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+        <button type="submit" disabled={submitting} className="btn-primary">
+          {submitting ? "Saving…" : editEntry ? "Update Entry" : "Save Entry"}
+        </button>
+      </div>
     </form>
   );
 }
@@ -444,10 +431,8 @@ export default function TravelDiary({
   const [showTrips, setShowTrips] = useState(false);
   const [newTripName, setNewTripName] = useState("");
   const [isCreatingTrip, setIsCreatingTrip] = useState(false);
-  const [addToTripEntryId, setAddToTripEntryId] = useState<string | null>(null);
-  const [addToTripPlaceId, setAddToTripPlaceId] = useState<string | null>(null);
-  const tripDropdownRef = useRef<HTMLDivElement>(null);
   const [shareMenuId, setShareMenuId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fetchTrips = useCallback(async () => {
     try {
@@ -458,18 +443,6 @@ export default function TravelDiary({
   }, []);
 
   useEffect(() => { fetchTrips(); }, [fetchTrips]);
-
-  // Close trip dropdown on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (tripDropdownRef.current && !tripDropdownRef.current.contains(e.target as Node)) {
-        setAddToTripEntryId(null);
-        setAddToTripPlaceId(null);
-      }
-    };
-    if (addToTripEntryId) document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [addToTripEntryId]);
 
   const handleCreateTrip = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -491,19 +464,6 @@ export default function TravelDiary({
     if (res.ok) {
       if (selectedTripId === tripId) { setSelectedTripId(null); setShowTrips(false); }
       await fetchTrips();
-    }
-  };
-
-  const handleAddEntryToTrip = async (tripId: string, placeId: string, entryId: string) => {
-    const res = await fetch(`${API_BASE}/api/trips/${encodeURIComponent(tripId)}/entries`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ placeId, entryId }),
-    });
-    if (res.ok) {
-      await fetchTrips();
-      setAddToTripEntryId(null);
-      setAddToTripPlaceId(null);
     }
   };
 
@@ -626,6 +586,9 @@ export default function TravelDiary({
 
   useEffect(() => { fetchWishlist(); }, [fetchWishlist]);
 
+  // Close mobile sidebar on navigation
+  useEffect(() => { setSidebarOpen(false); }, [selectedPlaceId, showFavorites, showWishlist, showTrips]);
+
   const handleAddWish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!wishPlace.trim() || !wishCountry.trim()) return;
@@ -680,16 +643,6 @@ export default function TravelDiary({
     if (wishlistTab === "all") return wishlist;
     return wishlist.filter((w) => w.status === wishlistTab);
   }, [wishlist, wishlistTab]);
-
-  const wishlistByCountry = useMemo(() => {
-    const map: Record<string, { total: number; done: number }> = {};
-    wishlist.forEach((w) => {
-      if (!map[w.country]) map[w.country] = { total: 0, done: 0 };
-      map[w.country].total++;
-      if (w.status === "done") map[w.country].done++;
-    });
-    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
-  }, [wishlist]);
 
   const toggleFavorite = (entryId: string) => {
     setFavoriteIds((prev) => {
@@ -928,8 +881,10 @@ export default function TravelDiary({
 
   return (
     <div className="app-shell">
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
       {/* ======== Sidebar ======== */}
-      <aside className="diary-sidebar">
+      <aside className={`diary-sidebar${sidebarOpen ? " open" : ""}`}>
         <div className="sidebar-brand">
           <h1>My Travels</h1>
           <div className="sidebar-stat">
@@ -1054,7 +1009,6 @@ export default function TravelDiary({
             >
               <span className="favorites-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></span>
               <span className="trip-name-label">{trip.name}</span>
-              <span className="entry-count">{trip.entryRefs.length}</span>
               <button
                 className="trip-delete-btn"
                 onClick={(e) => { e.stopPropagation(); handleDeleteTrip(trip.id); }}
@@ -1125,7 +1079,9 @@ export default function TravelDiary({
       <div className="main-column">
         {/* ---- Top Bar ---- */}
         <header className="top-bar">
-          <div className="search-box">
+          <button className="sidebar-toggle" onClick={() => setSidebarOpen((v) => !v)} aria-label="Toggle sidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>          <div className="search-box">
             <input
               type="text"
               placeholder="Search by title, description, place, #tag, or category…"
@@ -1357,27 +1313,6 @@ export default function TravelDiary({
                   </div>
                 )}
               </div>
-
-              {wishlistByCountry.length > 0 && (
-                <aside className="wishlist-sidebar">
-                  <h3 className="wishlist-sidebar-title">By Country</h3>
-                  {wishlistByCountry.map(([country, { total, done }]) => {
-                    const pct = Math.round((done / total) * 100);
-                    return (
-                      <div key={country} className="wish-country-card">
-                        <span className="wish-country-name">📍 {country}</span>
-                        <div className="wish-country-bar-wrap">
-                          <span className="wish-country-pct">{pct}%</span>
-                          <div className="wish-country-bar">
-                            <div className="wish-country-bar-fill" style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                        <span className="wish-country-detail">{done} of {total} visited</span>
-                      </div>
-                    );
-                  })}
-                </aside>
-              )}
             </div>
           ) : showTrips && selectedTrip ? (
             <>
@@ -1571,10 +1506,12 @@ export default function TravelDiary({
                   key={editingEntry?.id ?? "new"}
                   placeId={selectedPlace.id}
                   editEntry={editingEntry}
-                  trips={trips}
-                  onAddToTrip={handleAddEntryToTrip}
                   onDone={async () => {
                     await fetchPlaces();
+                    setShowEntryForm(false);
+                    setEditingEntry(null);
+                  }}
+                  onCancel={() => {
                     setShowEntryForm(false);
                     setEditingEntry(null);
                   }}
@@ -1591,36 +1528,6 @@ export default function TravelDiary({
                     const urls = getImageUrls(entry);
                     return (
                     <article key={entry.id} className="entry-card">
-                      {trips.length > 0 && (
-                        <div className="add-to-trip-wrap card-corner">
-                          <button
-                            className="add-to-trip-btn"
-                            onClick={() => { setAddToTripEntryId(entry.id); setAddToTripPlaceId(selectedPlace.id); }}
-                            aria-label="Add to trip"
-                            title="Add to trip"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                          </button>
-                          {addToTripEntryId === entry.id && (
-                            <div className="trip-dropdown" ref={tripDropdownRef}>
-                              <div className="trip-dropdown-title">Add to trip</div>
-                              {trips.map((trip) => {
-                                const already = trip.entryRefs.some((r) => r.entryId === entry.id);
-                                return (
-                                  <button
-                                    key={trip.id}
-                                    className={`trip-dropdown-item${already ? " already" : ""}`}
-                                    disabled={already}
-                                    onClick={() => handleAddEntryToTrip(trip.id, selectedPlace.id, entry.id)}
-                                  >
-                                    {trip.name}{already ? " ✓" : ""}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      )}
                       {urls.length > 0 ? (
                         <div className="entry-card-image-wrap">
                           <ImageCarousel urls={urls} alt={entry.title} />
@@ -1714,36 +1621,6 @@ export default function TravelDiary({
                     const urls = getImageUrls(entry);
                     return (
                     <article key={entry.id} className="entry-card">
-                      {trips.length > 0 && (
-                        <div className="add-to-trip-wrap card-corner">
-                          <button
-                            className="add-to-trip-btn"
-                            onClick={() => { setAddToTripEntryId(entry.id); setAddToTripPlaceId(entry.placeId); }}
-                            aria-label="Add to trip"
-                            title="Add to trip"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                          </button>
-                          {addToTripEntryId === entry.id && (
-                            <div className="trip-dropdown" ref={tripDropdownRef}>
-                              <div className="trip-dropdown-title">Add to trip</div>
-                              {trips.map((trip) => {
-                                const already = trip.entryRefs.some((r) => r.entryId === entry.id);
-                                return (
-                                  <button
-                                    key={trip.id}
-                                    className={`trip-dropdown-item${already ? " already" : ""}`}
-                                    disabled={already}
-                                    onClick={() => handleAddEntryToTrip(trip.id, entry.placeId, entry.id)}
-                                  >
-                                    {trip.name}{already ? " ✓" : ""}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      )}
                       {urls.length > 0 ? (
                         <div className="entry-card-image-wrap">
                           <ImageCarousel urls={urls} alt={entry.title} />

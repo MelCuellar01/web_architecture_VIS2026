@@ -5,24 +5,6 @@
     "country": "Japan",
     "entries": [
       {
-        "id": "entry_1774482564099",
-        "title": "Senso-ji Temple",
-        "description": "A serene and stunning view at sunset.",
-        "category": "Landmark",
-        "rating": 5,
-        "visitDate": "2026-03-25T00:00:00.000Z",
-        "createdAt": "2026-03-25T23:49:24.099Z",
-        "address": "",
-        "tags": [
-          "vacations",
-          "fun",
-          "trip"
-        ],
-        "imageUrls": [
-          "/uploads/1776082844568-131661813-sensoji-temple-asakusa-tokyo.jpg"
-        ]
-      },
-      {
         "id": "entry_1774483278577",
         "title": "Disneyland!",
         "description": "happiest place on earth. fun, but too crowded. ",
