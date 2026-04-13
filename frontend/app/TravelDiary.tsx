@@ -714,10 +714,11 @@ export default function TravelDiary({
 
   // ---- Delete place / country ----
   const [confirmDelete, setConfirmDelete] = useState<{
-    type: "place" | "country";
+    type: "place" | "country" | "entry" | "trip" | "wishlist" | "trip-item" | "trip-entry";
     label: string;
-    placeIds: string[];
-    entryCount: number;
+    placeIds?: string[];
+    entryCount?: number;
+    onConfirm: () => Promise<void> | void;
   } | null>(null);
 
   const deletePlaces = async (placeIds: string[]) => {
@@ -742,6 +743,7 @@ export default function TravelDiary({
         label: `${place.city}, ${place.country}`,
         placeIds: [place.id],
         entryCount: place.entries.length,
+        onConfirm: () => deletePlaces([place.id]),
       });
     }
   };
@@ -757,6 +759,7 @@ export default function TravelDiary({
         label: countryName,
         placeIds: ids,
         entryCount: totalEntries,
+        onConfirm: () => deletePlaces(ids),
       });
     }
   };
@@ -1011,7 +1014,7 @@ export default function TravelDiary({
               <span className="trip-name-label">{trip.name}</span>
               <button
                 className="trip-delete-btn"
-                onClick={(e) => { e.stopPropagation(); handleDeleteTrip(trip.id); }}
+                onClick={(e) => { e.stopPropagation(); setConfirmDelete({ type: "trip", label: trip.name, onConfirm: () => handleDeleteTrip(trip.id) }); }}
                 aria-label="Delete trip"
                 title="Delete trip"
               >×</button>
@@ -1160,7 +1163,7 @@ export default function TravelDiary({
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 Back to Home
               </button>
-              <h1 className="place-heading">♥ Favorites</h1>
+              <h1 className="place-heading" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Favorites</h1>
               {filteredFavoriteEntries.length === 0 ? (
                 <div className="empty-state">
                   <p>{isSearching ? "No favorites match your search." : "No favorites yet. Click the heart icon on any entry to add it here."}</p>
@@ -1289,7 +1292,7 @@ export default function TravelDiary({
                                 <button className="wish-action-btn" onClick={() => startEditWish(item)} aria-label="Edit" title="Edit">
                                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </button>
-                                <button className="wish-action-btn wish-action-delete" onClick={() => handleDeleteWish(item.id)} aria-label="Delete" title="Delete">
+                                <button className="wish-action-btn wish-action-delete" onClick={() => setConfirmDelete({ type: "wishlist", label: `${item.place}, ${item.country}`, onConfirm: () => handleDeleteWish(item.id) })} aria-label="Delete" title="Delete">
                                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                                 </button>
                               </div>
@@ -1378,7 +1381,7 @@ export default function TravelDiary({
                             </div>
                             <button
                               className="delete-btn"
-                              onClick={() => handleRemoveEntryFromTrip(selectedTrip.id, entry.id)}
+                              onClick={() => setConfirmDelete({ type: "trip-entry", label: entry.title, onConfirm: () => handleRemoveEntryFromTrip(selectedTrip.id, entry.id) })}
                               aria-label="Remove from trip"
                               title="Remove from trip"
                             >
@@ -1468,7 +1471,7 @@ export default function TravelDiary({
                                 <button className="wish-action-btn" onClick={() => startEditTripItem(item)} aria-label="Edit" title="Edit">
                                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </button>
-                                <button className="wish-action-btn wish-action-delete" onClick={() => handleDeleteTripItem(item.id)} aria-label="Delete" title="Delete">
+                                <button className="wish-action-btn wish-action-delete" onClick={() => setConfirmDelete({ type: "trip-item", label: item.place || item.note || "this item", onConfirm: () => handleDeleteTripItem(item.id) })} aria-label="Delete" title="Delete">
                                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                                 </button>
                               </div>
@@ -1566,7 +1569,11 @@ export default function TravelDiary({
                             </button>
                             <button
                               className="delete-btn"
-                              onClick={() => handleDeleteEntry(selectedPlace.id, entry.id)}
+                              onClick={() => setConfirmDelete({
+                                type: "entry",
+                                label: entry.title,
+                                onConfirm: () => handleDeleteEntry(selectedPlace.id, entry.id),
+                              })}
                               aria-label="Delete entry"
                               title="Delete entry"
                             >
@@ -1782,19 +1789,30 @@ export default function TravelDiary({
             <div className="confirm-delete-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </div>
-            <h2>Delete {confirmDelete.type === "country" ? "Country" : "City"}?</h2>
+            <h2>Delete {
+              confirmDelete.type === "country" ? "Country" :
+              confirmDelete.type === "place" ? "City" :
+              confirmDelete.type === "entry" ? "Diary Entry" :
+              confirmDelete.type === "trip" ? "Trip" :
+              confirmDelete.type === "wishlist" ? "Wishlist Item" :
+              confirmDelete.type === "trip-item" ? "Planning Item" :
+              "Trip Entry"
+            }?</h2>
             <p>
               Are you sure you want to delete <strong>{confirmDelete.label}</strong>?
-              {confirmDelete.entryCount > 0 && (
+              {(confirmDelete.entryCount ?? 0) > 0 && (
                 <> This will permanently remove <strong>{confirmDelete.entryCount}</strong> diary {confirmDelete.entryCount === 1 ? "entry" : "entries"}.</>
               )}
+              {confirmDelete.type === "entry" && <> This action cannot be undone.</>}
+              {confirmDelete.type === "trip" && <> All planning items and entry references in this trip will be lost.</>}
+              {confirmDelete.type === "trip-entry" && <> The entry will be removed from this trip.</>}
             </p>
             <div className="confirm-delete-actions">
               <button className="btn-secondary" onClick={() => setConfirmDelete(null)}>Cancel</button>
               <button
                 className="btn-danger"
                 onClick={async () => {
-                  await deletePlaces(confirmDelete.placeIds);
+                  await confirmDelete.onConfirm();
                   setConfirmDelete(null);
                 }}
               >

@@ -1921,13 +1921,15 @@ body {
 
 /* ===== Address ===== */
 .entry-address {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
+  font-style: italic;
   color: var(--neutral);
   margin: 0.15rem 0 0.3rem;
 }
 
 .entry-modal-address {
-  font-size: 0.9rem;
+  font-size: 0.82rem;
+  font-style: italic;
   color: var(--neutral);
   margin: 0.25rem 0 0.5rem;
 }

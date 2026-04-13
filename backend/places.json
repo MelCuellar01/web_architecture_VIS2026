@@ -75,8 +75,16 @@
         "category": "Landmark",
         "rating": 3,
         "visitDate": "2026-03-12T00:00:00.000Z",
-        "imageUrl": "/uploads/1774888599773-399727173-Casa_BatlloÌ_(Antoni_Gaudi)_(interior),_43,_Passeig_de_GraÌcia,_Eixample,_Barcelona,_Catalonia,_Spain.jpg",
-        "createdAt": "2026-03-30T16:36:39.785Z"
+        "createdAt": "2026-03-30T16:36:39.785Z",
+        "address": "Carrer de les Carolines, 20-26, Gràcia, 08012 Barcelona",
+        "tags": [
+          "sightseeing",
+          "museum",
+          "tourism"
+        ],
+        "imageUrls": [
+          "/uploads/1774888599773-399727173-Casa_BatlloÌ_(Antoni_Gaudi)_(interior),_43,_Passeig_de_GraÌcia,_Eixample,_Barcelona,_Catalonia,_Spain.jpg"
+        ]
       }
     ],
     "createdAt": "2026-03-25T23:52:00.040Z"
