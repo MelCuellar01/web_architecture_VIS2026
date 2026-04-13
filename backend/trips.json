@@ -1,13 +1,19 @@
 [
   {
-    "id": "trip_1776015054814",
-    "name": "Japan 2025",
-    "entryRefs": [
+    "id": "trip_1776078809750",
+    "name": "Birthday 2026",
+    "entryRefs": [],
+    "createdAt": "2026-04-13T11:13:29.750Z",
+    "items": [
       {
-        "placeId": "place_1774482400960",
-        "entryId": "entry_1776015949801"
+        "id": "ti_1776080366450",
+        "place": "Dancing",
+        "country": "Spain",
+        "note": "Dancing at a flamenco bar and meeting new people.",
+        "category": "Event",
+        "status": "pending",
+        "createdAt": "2026-04-13T11:39:26.450Z"
       }
-    ],
-    "createdAt": "2026-04-12T17:30:54.814Z"
+    ]
   }
 ]

@@ -28,10 +28,21 @@ interface Place {
   createdAt: string;
 }
 
+interface TripItem {
+  id: string;
+  place: string;
+  country: string;
+  note: string;
+  category: string;
+  status: "pending" | "done";
+  createdAt: string;
+}
+
 interface Trip {
   id: string;
   name: string;
   entryRefs: { placeId: string; entryId: string }[];
+  items?: TripItem[];
   createdAt: string;
 }
 
@@ -516,6 +527,82 @@ export default function TravelDiary({
     return entries;
   }, [selectedTrip, places]);
 
+  // Trip items state
+  const TRIP_ITEM_CATEGORIES = ["General", "Restaurant", "Museum", "Park", "Landmark", "Hotel", "Event", "Other"];
+  const [tripItemTab, setTripItemTab] = useState<"all" | "pending" | "done">("all");
+  const [isAddingTripItem, setIsAddingTripItem] = useState(false);
+  const [tripItemPlace, setTripItemPlace] = useState("");
+  const [tripItemCountry, setTripItemCountry] = useState("");
+  const [tripItemNote, setTripItemNote] = useState("");
+  const [tripItemCategory, setTripItemCategory] = useState("General");
+  const [editingTripItemId, setEditingTripItemId] = useState<string | null>(null);
+  const [editTripItemPlace, setEditTripItemPlace] = useState("");
+  const [editTripItemCountry, setEditTripItemCountry] = useState("");
+  const [editTripItemNote, setEditTripItemNote] = useState("");
+  const [editTripItemCategory, setEditTripItemCategory] = useState("General");
+
+  const filteredTripItems = useMemo(() => {
+    const items = selectedTrip?.items ?? [];
+    if (tripItemTab === "all") return items;
+    return items.filter((i) => i.status === tripItemTab);
+  }, [selectedTrip, tripItemTab]);
+
+  const handleAddTripItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTrip) return;
+    const res = await fetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ place: tripItemPlace.trim(), country: tripItemCountry.trim(), note: tripItemNote.trim(), category: tripItemCategory }),
+    });
+    if (res.ok) {
+      await fetchTrips();
+      setTripItemPlace("");
+      setTripItemCountry("");
+      setTripItemNote("");
+      setTripItemCategory("General");
+      setIsAddingTripItem(false);
+    }
+  };
+
+  const handleUpdateTripItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTrip || !editingTripItemId) return;
+    const res = await fetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(editingTripItemId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ place: editTripItemPlace.trim(), country: editTripItemCountry.trim(), note: editTripItemNote.trim(), category: editTripItemCategory }),
+    });
+    if (res.ok) {
+      await fetchTrips();
+      setEditingTripItemId(null);
+    }
+  };
+
+  const handleUpdateTripItemStatus = async (itemId: string, status: "pending" | "done") => {
+    if (!selectedTrip) return;
+    const res = await fetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(itemId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (res.ok) await fetchTrips();
+  };
+
+  const handleDeleteTripItem = async (itemId: string) => {
+    if (!selectedTrip) return;
+    const res = await fetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(itemId)}`, { method: "DELETE" });
+    if (res.ok) await fetchTrips();
+  };
+
+  const startEditTripItem = (item: TripItem) => {
+    setEditingTripItemId(item.id);
+    setEditTripItemPlace(item.place);
+    setEditTripItemCountry(item.country);
+    setEditTripItemNote(item.note);
+    setEditTripItemCategory(item.category);
+  };
+
   // Wishlist state
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [showWishlist, setShowWishlist] = useState(false);
@@ -672,6 +759,55 @@ export default function TravelDiary({
     }
   };
 
+  // ---- Delete place / country ----
+  const [confirmDelete, setConfirmDelete] = useState<{
+    type: "place" | "country";
+    label: string;
+    placeIds: string[];
+    entryCount: number;
+  } | null>(null);
+
+  const deletePlaces = async (placeIds: string[]) => {
+    for (const id of placeIds) {
+      await fetch(`${API_BASE}/api/places/${encodeURIComponent(id)}`, { method: "DELETE" });
+    }
+    if (placeIds.includes(selectedPlaceId ?? "")) {
+      setSelectedPlaceId(null);
+      setShowEntryForm(false);
+      setEditingEntry(null);
+    }
+    await fetchPlaces();
+    await fetchTrips();
+  };
+
+  const handleDeletePlace = (place: Place) => {
+    if (place.entries.length === 0) {
+      deletePlaces([place.id]);
+    } else {
+      setConfirmDelete({
+        type: "place",
+        label: `${place.city}, ${place.country}`,
+        placeIds: [place.id],
+        entryCount: place.entries.length,
+      });
+    }
+  };
+
+  const handleDeleteCountry = (countryName: string, countryPlaces: Place[]) => {
+    const totalEntries = countryPlaces.reduce((sum, p) => sum + p.entries.length, 0);
+    const ids = countryPlaces.map((p) => p.id);
+    if (totalEntries === 0) {
+      deletePlaces(ids);
+    } else {
+      setConfirmDelete({
+        type: "country",
+        label: countryName,
+        placeIds: ids,
+        entryCount: totalEntries,
+      });
+    }
+  };
+
   const selectedPlace = places.find((p) => p.id === selectedPlaceId) ?? null;
 
   const totalEntries = places.reduce((sum, p) => sum + p.entries.length, 0);
@@ -821,7 +957,17 @@ export default function TravelDiary({
           ) : (
             Object.entries(groupedPlaces).map(([countryName, countryPlaces]) => (
               <div key={countryName} className="country-group">
-                <h3 className="country-header">{countryName}</h3>
+                <div className="country-header-row">
+                  <h3 className="country-header">{countryName}</h3>
+                  <button
+                    className="sidebar-delete-btn"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteCountry(countryName, countryPlaces); }}
+                    aria-label={`Delete ${countryName}`}
+                    title={`Delete ${countryName}`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                  </button>
+                </div>
                 <ul>
                   {countryPlaces.map((place) => (
                     <li
@@ -838,8 +984,16 @@ export default function TravelDiary({
                     >
                       <span className="place-dot" />
                       <span>{place.city}</span>
-                      <span className="entry-count">
-                        {place.entries.length}
+                      <span className="place-item-actions">
+                        <span className="entry-count">{place.entries.length}</span>
+                        <button
+                          className="sidebar-delete-btn"
+                          onClick={(e) => { e.stopPropagation(); handleDeletePlace(place); }}
+                          aria-label={`Delete ${place.city}`}
+                          title={`Delete ${place.city}`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                        </button>
                       </span>
                     </li>
                   ))}
@@ -1180,7 +1334,7 @@ export default function TravelDiary({
                                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </button>
                                 <button className="wish-action-btn wish-action-delete" onClick={() => handleDeleteWish(item.id)} aria-label="Delete" title="Delete">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                                 </button>
                               </div>
                             </div>
@@ -1232,9 +1386,9 @@ export default function TravelDiary({
                 Back to Home
               </button>
               <div className="place-heading-row">
-                <h1 className="place-heading">
-                  ✈ {selectedTrip.name}
-                  <span className="search-result-count">({tripEntries.length})</span>
+                <h1 className="place-heading" style={{display: "flex", alignItems: "center", gap: "0.4rem"}}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink: 0}}><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+                  {selectedTrip.name}
                 </h1>
                 {tripEntries.length > 0 && (
                   <div className="share-wrap">
@@ -1245,11 +1399,22 @@ export default function TravelDiary({
                   </div>
                 )}
               </div>
-              {tripEntries.length === 0 ? (
-                <div className="empty-state">
-                  <p>No entries in this trip yet. Use the + icon on any entry card to add it.</p>
+              <div className="trip-items-tabs">
+                  {(["all", "pending", "done"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      className={`trip-items-tab${tripItemTab === tab ? " active" : ""}`}
+                      onClick={() => setTripItemTab(tab)}
+                    >
+                      <span className={`trip-items-tab-dot ${tab}`} />
+                      {tab === "all" ? "All" : tab === "pending" ? "Pending" : "Done"}
+                      <span className="trip-items-tab-count">
+                        {tab === "all" ? (selectedTrip?.items ?? []).length : (selectedTrip?.items ?? []).filter((i) => i.status === tab).length}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-              ) : (
+              {tripEntries.length > 0 && (
                 <div className="entries-grid">
                   {tripEntries.map((entry) => {
                     const urls = getImageUrls(entry);
@@ -1282,7 +1447,7 @@ export default function TravelDiary({
                               aria-label="Remove from trip"
                               title="Remove from trip"
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                             </button>
                             <button
                               className={`heart-btn${favoriteIds.has(entry.id) ? " active" : ""}`}
@@ -1314,6 +1479,82 @@ export default function TravelDiary({
                   })}
                 </div>
               )}
+
+              {/* Trip planning items */}
+                {isAddingTripItem ? (
+                  <form className="trip-item-add-form" onSubmit={handleAddTripItem}>
+                    <div className="trip-item-add-row">
+                      <input type="text" placeholder="Place (optional)" value={tripItemPlace} onChange={(e) => setTripItemPlace(e.target.value)} autoFocus />
+                      <input type="text" placeholder="Country (optional)" value={tripItemCountry} onChange={(e) => setTripItemCountry(e.target.value)} />
+                    </div>
+                    <input type="text" placeholder="Note" value={tripItemNote} onChange={(e) => setTripItemNote(e.target.value)} className="trip-item-note-input" />
+                    <select value={tripItemCategory} onChange={(e) => setTripItemCategory(e.target.value)} className="trip-item-category-select">
+                      {TRIP_ITEM_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <div className="trip-item-add-actions">
+                      <button type="button" className="btn-secondary" onClick={() => { setIsAddingTripItem(false); setTripItemPlace(""); setTripItemCountry(""); setTripItemNote(""); setTripItemCategory("General"); }}>Cancel</button>
+                      <button type="submit" className="btn-primary">Add</button>
+                    </div>
+                  </form>
+                ) : (
+                  <button className="btn-add-wish" onClick={() => setIsAddingTripItem(true)}>+ Add Item</button>
+                )}
+
+                {filteredTripItems.length === 0 ? (
+                  <div className="empty-state">
+                    <p>{tripItemTab === "all" ? "No planning items yet. Add things you want to do on this trip!" : `No ${tripItemTab} items.`}</p>
+                  </div>
+                ) : (
+                  <div className="wishlist-grid">
+                    {filteredTripItems.map((item) => (
+                      <div key={item.id} className="wish-card">
+                        {editingTripItemId === item.id ? (
+                          <form className="wish-edit-form" onSubmit={handleUpdateTripItem}>
+                            <input type="text" value={editTripItemPlace} onChange={(e) => setEditTripItemPlace(e.target.value)} placeholder="Place (optional)" autoFocus />
+                            <input type="text" value={editTripItemCountry} onChange={(e) => setEditTripItemCountry(e.target.value)} placeholder="Country (optional)" />
+                            <input type="text" value={editTripItemNote} onChange={(e) => setEditTripItemNote(e.target.value)} placeholder="Note" />
+                            <select value={editTripItemCategory} onChange={(e) => setEditTripItemCategory(e.target.value)} className="trip-item-category-select">
+                              {TRIP_ITEM_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                            <div className="wish-edit-actions">
+                              <button type="button" className="btn-secondary" onClick={() => setEditingTripItemId(null)}>Cancel</button>
+                              <button type="submit" className="btn-primary">Save</button>
+                            </div>
+                          </form>
+                        ) : (
+                          <>
+                            <div className="wish-card-header">
+                              <div className="wish-card-info">
+                                {item.place && <span className="wish-card-place">{item.place}</span>}
+                                {item.country && <span className="wish-card-country">📍 {item.country}</span>}
+                                <span className={badgeClass(item.category)}>{item.category}</span>
+                              </div>
+                              <div className="wish-card-actions">
+                                <button className="wish-action-btn" onClick={() => startEditTripItem(item)} aria-label="Edit" title="Edit">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                </button>
+                                <button className="wish-action-btn wish-action-delete" onClick={() => handleDeleteTripItem(item.id)} aria-label="Delete" title="Delete">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                </button>
+                              </div>
+                            </div>
+                            {item.note && <p className="wish-card-note">{item.note}</p>}
+                            <div className="wish-card-footer">
+                              <select
+                                className={`wish-status-select status-${item.status}`}
+                                value={item.status}
+                                onChange={(e) => handleUpdateTripItemStatus(item.id, e.target.value as "pending" | "done")}
+                              >
+                                <option value="pending">Pending</option>
+                                <option value="done">Done</option>
+                              </select>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
             </>
           ) : selectedPlace ? (
             <>
@@ -1652,6 +1893,36 @@ export default function TravelDiary({
                   {shareMenuId === `modal-${viewingEntry.entry.id}` && <ShareMenu text={buildEntryShareText(viewingEntry.entry, viewingEntry.placeName)} onClose={() => setShareMenuId(null)} />}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======== Confirm Delete Modal ======== */}
+      {confirmDelete && (
+        <div className="entry-modal-overlay" onClick={() => setConfirmDelete(null)}>
+          <div className="confirm-delete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-delete-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </div>
+            <h2>Delete {confirmDelete.type === "country" ? "Country" : "City"}?</h2>
+            <p>
+              Are you sure you want to delete <strong>{confirmDelete.label}</strong>?
+              {confirmDelete.entryCount > 0 && (
+                <> This will permanently remove <strong>{confirmDelete.entryCount}</strong> diary {confirmDelete.entryCount === 1 ? "entry" : "entries"}.</>
+              )}
+            </p>
+            <div className="confirm-delete-actions">
+              <button className="btn-secondary" onClick={() => setConfirmDelete(null)}>Cancel</button>
+              <button
+                className="btn-danger"
+                onClick={async () => {
+                  await deletePlaces(confirmDelete.placeIds);
+                  setConfirmDelete(null);
+                }}
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>

@@ -235,6 +235,42 @@ app.delete('/api/places/:placeId/entries/:entryId', asyncHandler(async (req, res
   res.json({ message: 'Entry deleted' });
 }));
 
+// 6. Delete a place (city) and all its entries + images
+app.delete('/api/places/:placeId', asyncHandler(async (req, res) => {
+  const { placeId } = req.params;
+  const places = readPlaces();
+  const placeIndex = places.findIndex(p => p.id === placeId);
+  if (placeIndex === -1) {
+    return res.status(404).json({ error: 'Place not found' });
+  }
+
+  const [removed] = places.splice(placeIndex, 1);
+
+  // Delete all images belonging to entries of this place
+  for (const entry of removed.entries) {
+    const urls = entry.imageUrls || (entry.imageUrl ? [entry.imageUrl] : []);
+    for (const url of urls) {
+      const imagePath = path.join(__dirname, 'public', url);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    }
+  }
+
+  // Also clean up trip references that point to this place
+  const trips = readTrips();
+  let tripsChanged = false;
+  for (const trip of trips) {
+    const before = trip.entryRefs.length;
+    trip.entryRefs = trip.entryRefs.filter(ref => ref.placeId !== placeId);
+    if (trip.entryRefs.length !== before) tripsChanged = true;
+  }
+  if (tripsChanged) writeTrips(trips);
+
+  writePlaces(places);
+  res.json({ message: 'Place deleted' });
+}));
+
 // ===== Trips =====
 
 // Get all trips
@@ -253,6 +289,7 @@ app.post('/api/trips', asyncHandler(async (req, res) => {
     id: 'trip_' + Date.now().toString(),
     name,
     entryRefs: [],
+    items: [],
     createdAt: new Date().toISOString()
   };
   const trips = readTrips();
@@ -298,6 +335,65 @@ app.delete('/api/trips/:tripId', asyncHandler(async (req, res) => {
   trips.splice(index, 1);
   writeTrips(trips);
   res.json({ message: 'Trip deleted' });
+}));
+
+// ===== Trip Items (planning entries) =====
+
+// Add a trip item
+app.post('/api/trips/:tripId/items', asyncHandler(async (req, res) => {
+  const { tripId } = req.params;
+  const { place, country, note, category, status } = req.body;
+  const trips = readTrips();
+  const trip = trips.find(t => t.id === tripId);
+  if (!trip) return res.status(404).json({ error: 'Trip not found' });
+  if (!trip.items) trip.items = [];
+  const allowedStatuses = ['pending', 'done'];
+  const newItem = {
+    id: 'ti_' + Date.now().toString(),
+    place: place || '',
+    country: country || '',
+    note: note || '',
+    category: category || 'General',
+    status: allowedStatuses.includes(status) ? status : 'pending',
+    createdAt: new Date().toISOString()
+  };
+  trip.items.push(newItem);
+  writeTrips(trips);
+  res.status(201).json(newItem);
+}));
+
+// Update a trip item
+app.put('/api/trips/:tripId/items/:itemId', asyncHandler(async (req, res) => {
+  const { tripId, itemId } = req.params;
+  const trips = readTrips();
+  const trip = trips.find(t => t.id === tripId);
+  if (!trip) return res.status(404).json({ error: 'Trip not found' });
+  if (!trip.items) trip.items = [];
+  const idx = trip.items.findIndex(i => i.id === itemId);
+  if (idx === -1) return res.status(404).json({ error: 'Item not found' });
+  const { place, country, note, category, status } = req.body;
+  const allowedStatuses = ['pending', 'done'];
+  if (place !== undefined) trip.items[idx].place = place;
+  if (country !== undefined) trip.items[idx].country = country;
+  if (note !== undefined) trip.items[idx].note = note;
+  if (category !== undefined) trip.items[idx].category = category;
+  if (status && allowedStatuses.includes(status)) trip.items[idx].status = status;
+  writeTrips(trips);
+  res.json(trip.items[idx]);
+}));
+
+// Delete a trip item
+app.delete('/api/trips/:tripId/items/:itemId', asyncHandler(async (req, res) => {
+  const { tripId, itemId } = req.params;
+  const trips = readTrips();
+  const trip = trips.find(t => t.id === tripId);
+  if (!trip) return res.status(404).json({ error: 'Trip not found' });
+  if (!trip.items) trip.items = [];
+  const idx = trip.items.findIndex(i => i.id === itemId);
+  if (idx === -1) return res.status(404).json({ error: 'Item not found' });
+  trip.items.splice(idx, 1);
+  writeTrips(trips);
+  res.json({ message: 'Trip item deleted' });
 }));
 
 // ===== Wishlist =====

@@ -145,6 +145,100 @@ body {
   margin: 0;
 }
 
+.country-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 0.75rem;
+}
+.country-header-row .sidebar-delete-btn {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.country-group:hover .country-header-row .sidebar-delete-btn {
+  opacity: 1;
+}
+
+.sidebar-delete-btn {
+  background: none;
+  border: none;
+  color: var(--neutral-light);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+.sidebar-delete-btn:hover {
+  color: var(--tertiary);
+  background: rgba(245, 106, 66, 0.1);
+}
+
+.place-item-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.place-item-actions .sidebar-delete-btn {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.place-item:hover .place-item-actions .sidebar-delete-btn {
+  opacity: 1;
+}
+
+/* ---- Confirm Delete Modal ---- */
+.confirm-delete-modal {
+  background: #ffffff !important;
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  max-width: 380px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  position: relative;
+  z-index: 1001;
+}
+.confirm-delete-icon {
+  color: var(--tertiary);
+  margin-bottom: 0.75rem;
+}
+.confirm-delete-modal h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #2a241e !important;
+  margin: 0 0 0.5rem;
+}
+.confirm-delete-modal p {
+  font-size: 0.9rem;
+  color: #3d362e !important;
+  line-height: 1.5;
+  margin: 0 0 1.25rem;
+}
+.confirm-delete-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+.btn-danger {
+  background: var(--tertiary);
+  color: #fff;
+  border: none;
+  padding: 0.55rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-danger:hover {
+  background: #d95535;
+}
+
 .place-item {
   display: flex;
   align-items: center;
@@ -684,6 +778,135 @@ body {
     flex: 1;
     min-width: 150px;
   }
+}
+
+/* ---- Trip Planning Items ---- */
+.trip-items-section {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.trip-items-heading {
+  font-family: "all-round-gothic", sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 1.25rem !important;
+  color: var(--neutral-900) !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.trip-items-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.trip-items-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--neutral-200);
+  background: white;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--neutral-600);
+  transition: all 0.15s;
+}
+
+.trip-items-tab:hover {
+  border-color: var(--neutral-300);
+  background: var(--neutral-50);
+}
+
+.trip-items-tab.active {
+  border-color: var(--primary);
+  background: rgba(97, 196, 180, 0.08);
+  color: var(--neutral-900);
+  font-weight: 600;
+}
+
+.trip-items-tab-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.trip-items-tab-dot.all { background: var(--neutral-400); }
+.trip-items-tab-dot.pending { background: #e67e22; }
+.trip-items-tab-dot.done { background: #27ae60; }
+
+.trip-items-tab-count {
+  font-size: 0.72rem;
+  color: var(--neutral-400);
+  font-weight: 400;
+}
+
+.trip-item-add-form {
+  background: white;
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-lg, 12px);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.trip-item-add-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.trip-item-add-row input,
+.trip-item-note-input {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.88rem;
+  background: var(--background);
+  color: var(--foreground);
+  transition: border-color 0.15s;
+}
+
+.trip-item-add-row input:focus,
+.trip-item-note-input:focus,
+.trip-item-category-select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.trip-item-category-select {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.88rem;
+  background: var(--background);
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.trip-item-add-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.wish-status-select.status-pending {
+  color: #e67e22 !important;
+  border-color: rgba(230, 126, 34, 0.3) !important;
+  background: rgba(230, 126, 34, 0.06) !important;
+}
+
+.wish-status-select.status-done {
+  color: #27ae60 !important;
+  border-color: rgba(39, 174, 96, 0.3) !important;
+  background: rgba(39, 174, 96, 0.06) !important;
 }
 
 /* ---- Add to Trip Dropdown ---- */
