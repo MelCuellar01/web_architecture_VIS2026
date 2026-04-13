@@ -1,0 +1,18 @@
+[
+  {
+    "id": "wish_1776032650769",
+    "place": "Watch the Northern Lights",
+    "country": "Iceland",
+    "status": "upcoming",
+    "note": "Do a camping trip with friends and see the lights at night.",
+    "createdAt": "2026-04-12T22:24:10.769Z"
+  },
+  {
+    "id": "wish_1776032732054",
+    "place": "Hike in the Patagonia",
+    "country": "Argentina",
+    "status": "not-visited",
+    "note": "See the patagonia and visit Bariloche.",
+    "createdAt": "2026-04-12T22:25:32.054Z"
+  }
+]

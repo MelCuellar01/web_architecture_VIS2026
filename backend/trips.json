@@ -1,0 +1,13 @@
+[
+  {
+    "id": "trip_1776015054814",
+    "name": "Japan 2025",
+    "entryRefs": [
+      {
+        "placeId": "place_1774482400960",
+        "entryId": "entry_1776015949801"
+      }
+    ],
+    "createdAt": "2026-04-12T17:30:54.814Z"
+  }
+]

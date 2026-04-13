@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,7 +28,17 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        <link rel="stylesheet" href="https://use.typekit.net/wuo4qao.css" />
+      </head>
+      <body className="min-h-full flex flex-col">
+        <div className="app-content">{children}</div>
+        <footer className="app-footer">
+          <Link href="/legal">Legal Notice</Link>
+          <span className="footer-sep">·</span>
+          <Link href="/privacy">Privacy Policy</Link>
+        </footer>
+      </body>
     </html>
   );
 }

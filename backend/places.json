@@ -11,8 +11,14 @@
         "category": "Landmark",
         "rating": 5,
         "visitDate": "2026-03-25T00:00:00.000Z",
-        "imageUrl": null,
-        "createdAt": "2026-03-25T23:49:24.099Z"
+        "createdAt": "2026-03-25T23:49:24.099Z",
+        "address": "",
+        "tags": [
+          "vacations",
+          "fun",
+          "trip"
+        ],
+        "imageUrls": []
       },
       {
         "id": "entry_1774483278577",
@@ -21,8 +27,37 @@
         "category": "Park",
         "rating": 3,
         "visitDate": "2026-03-25T00:00:00.000Z",
-        "imageUrl": "/uploads/1774483278567-381664111-Screenshot 2026-03-26 at 01.00.15.png",
-        "createdAt": "2026-03-26T00:01:18.577Z"
+        "createdAt": "2026-03-26T00:01:18.577Z",
+        "address": "1-1 Maihama, Urayasu",
+        "imageUrls": [
+          "/uploads/1774483278567-381664111-Screenshot 2026-03-26 at 01.00.15.png",
+          "/uploads/1775054994835-724615003-tokyo-disneyland-castle_klook.jpg",
+          "/uploads/1775056336537-939451070-NgkdVi4rv5wnZ9VNXNaJA4Vi8.jpg"
+        ],
+        "tags": [
+          "fun",
+          "food",
+          "rides",
+          "end of winter"
+        ]
+      },
+      {
+        "id": "entry_1776015949801",
+        "title": "Cherry Blossom Sightseeing ",
+        "description": "Weather was incredible, not too crowded and perfect for photos. ",
+        "category": "Other",
+        "rating": 5,
+        "visitDate": "2025-05-15T00:00:00.000Z",
+        "address": "",
+        "tags": [
+          "sightseeing",
+          "cherries",
+          "tokyo"
+        ],
+        "imageUrls": [
+          "/uploads/1776015949794-134393295-photo-1441205337478-70cb1521e35a-1024x683.jpeg"
+        ],
+        "createdAt": "2026-04-12T17:45:49.801Z"
       }
     ],
     "createdAt": "2026-03-25T23:46:40.960Z"
@@ -39,8 +74,15 @@
         "category": "Park",
         "rating": 5,
         "visitDate": "2026-03-03T00:00:00.000Z",
-        "imageUrl": "/uploads/1774482969996-776020963-Screenshot 2026-03-26 at 00.55.48.png",
-        "createdAt": "2026-03-25T23:56:10.011Z"
+        "createdAt": "2026-03-25T23:56:10.011Z",
+        "address": "",
+        "tags": [
+          "fun",
+          "vacations"
+        ],
+        "imageUrls": [
+          "/uploads/1774482969996-776020963-Screenshot 2026-03-26 at 00.55.48.png"
+        ]
       },
       {
         "id": "entry_1774888599785",
@@ -67,10 +109,21 @@
         "category": "Restaurant",
         "rating": 5,
         "visitDate": "2026-02-04T00:00:00.000Z",
-        "imageUrl": "/uploads/1774889820067-263263023-2-frietjes-grachten-1.jpg",
-        "createdAt": "2026-03-30T16:57:00.073Z"
+        "createdAt": "2026-03-30T16:57:00.073Z",
+        "address": "",
+        "tags": [],
+        "imageUrls": [
+          "/uploads/1774889820067-263263023-2-frietjes-grachten-1.jpg"
+        ]
       }
     ],
     "createdAt": "2026-03-30T16:37:21.126Z"
+  },
+  {
+    "id": "place_1775037397794",
+    "city": "Badalona",
+    "country": "Madrid",
+    "entries": [],
+    "createdAt": "2026-04-01T09:56:37.794Z"
   }
 ]
