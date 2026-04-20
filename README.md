@@ -1,10 +1,12 @@
 # web_architecture_VIS2026
 
-## Braucht eure App SSR/Next.js – oder wäre Vite eigentlich besser geeignet? Begründet anhand von SEO und Interaktivität.
+## Studio Session 02: Frontend-Architekturen
+
+### Braucht eure App SSR/Next.js – oder wäre Vite eigentlich besser geeignet? Begründet anhand von SEO und Interaktivität.
 
 A: Für meine Travel-Diary-App ist Vite aktuell besser geeignet, weil die App vor allem interaktiv ist (z.B. Orte auswählen und Einträge hinzufügen). SEO ist hier nicht so wichtig, da es keine öffentliche Website ist. Next.js wäre erst sinnvoll, wenn Inhalte über Suchmaschinen gefunden werden sollen.
 
-## Ressourcen & API-Design
+## Studio Session 03: API Design
 
 ### Ressourcen
 - **entries**: Hauptressource der App (Reisetagebuch-Einträge)
@@ -139,3 +141,44 @@ Die Antwort war funktional, aber unvollständig für die Anforderungen: Statusco
 **Verbesserung:**
 Die Ergebnisse waren deutlich besser: konsistente Statuscodes, saubere Trennung von Routing und App-Setup sowie eine klarere, modularere Struktur. Damit wurde die API robuster, testbarer und besser für die weitere Erweiterung (z. B. Nested Routes mit `places`) vorbereitet.
 
+## Erweiterung: zweite Ressource
+
+Zusätzlich zur Hauptressource wurde eine Beziehung zwischen `places` und `entries` als nested API umgesetzt.
+
+Ein `place` kann mehrere `entries` enthalten. Diese Beziehung wird über folgende Endpunkte abgebildet:
+
+- `GET /api/places/:id/entries` – alle Einträge eines Ortes abrufen
+- `POST /api/places/:id/entries` – neuen Eintrag für einen Ort erstellen
+
+Wenn der angegebene Ort nicht existiert, wird ein `404 Not Found` zurückgegeben.
+
+Diese nested API ergänzt das flache CRUD-Design sinnvoll, ohne die API unnötig komplex zu machen.
+
+## Studio Session 04: Persistenz 
+
+## Datenmodell
+
+### Tabellen-Skizze
+
+| Tabelle | Wichtige Felder | PK | FK |
+|---|---|---|---|
+| places | id, city, country, createdAt | id | - |
+| entries | id, placeId, title, description, rating, category, visitDate, createdAt | id | placeId -> places.id |
+| trips | id, name, createdAt | id | - |
+| wishlist | id, place, country, status, note, createdAt | id | - |
+| entryImages | id, entryId, imageUrl, createdAt | id | entryId -> entries.id |
+
+### Beziehungen
+
+- places 1:n entries
+- entries 1:n entryImages
+- trips n:m entries (typisch ueber Zwischentabelle, z. B. tripEntries mit tripId + entryId)
+- wishlist ist in diesem Modell eigenstaendig (keine direkte FK-Beziehung)
+
+### Pflichtfelder (NOT NULL)
+
+- places: id, city, country, createdAt
+- entries: id, placeId, title, description, rating, category, createdAt
+- trips: id, name, createdAt
+- wishlist: id, place, country, status, createdAt
+- entryImages: id, entryId, imageUrl, createdAt
