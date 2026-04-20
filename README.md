@@ -89,41 +89,39 @@ Erfolgsfall:
 - Methode/URL: `POST http://localhost:3000/api/entries`
 - Erwartet: `201`
 
+![Hoppscotch POST /api/entries (201)](docs/screenshots/hoppscotch-post-entries-201.png)
 
 Fehlerfall:
 - Methode/URL: `POST http://localhost:3000/api/entries`
 - Erwartet: `400`
 
+![Hoppscotch POST /api/entries (400)](docs/screenshots/hoppscotch-post-entries-400.png)
 
 #### 4. PUT /api/entries/:id
 Erfolgsfall:
 - Methode/URL: `PUT http://localhost:3000/api/entries/:id` (mit existierender `id`)
 - Erwartet: `200`
 
+![Hoppscotch PUT /api/entries/:id (200)](docs/screenshots/hoppscotch-put-entry-200.png)
 
 Fehlerfall:
-- Methode/URL: `PUT http://localhost:3000/api/entries/entry_does_not_exist_999`
+- Methode/URL: `PUT http://localhost:3000/api/entries/entry_1774483278570`
 - Erwartet: `404`
 
+![Hoppscotch PUT /api/entries/:id (404)](docs/screenshots/hoppscotch-put-entry-404.png)
 
 #### 5. DELETE /api/entries/:id
 Erfolgsfall:
 - Methode/URL: `DELETE http://localhost:3000/api/entries/:id` (mit existierender `id`)
 - Erwartet: `204`
 
+![Hoppscotch DELETE /api/entries/:id (204)](docs/screenshots/hoppscotch-delete-entry-204.png)
 
 Fehlerfall:
-- Methode/URL: `DELETE http://localhost:3000/api/entries/entry_does_not_exist_999`
+- Methode/URL: `DELETE http://localhost:3000/api/entries/entry_1774483278570`
 - Erwartet: `404`
 
-### Screenshot-Checkliste (Hoppscotch)
-- `GET /api/entries` mit Status `200`
-- `GET /api/entries/:id` mit Status `200`
-- `POST /api/entries` mit Status `201` und sichtbarer neuer `id`
-- `PUT /api/entries/:id` mit Status `200`
-- `DELETE /api/entries/:id` mit Status `204`
-- Ein Fehlerbeispiel mit Status `400` (POST mit fehlenden Pflichtfeldern)
-- Ein Fehlerbeispiel mit Status `404` (nicht existierende `id`)
+![Hoppscotch DELETE /api/entries/:id (404)](docs/screenshots/hoppscotch-delete-entry-404.png)
 
 ## Prompt-Iterationen
 
