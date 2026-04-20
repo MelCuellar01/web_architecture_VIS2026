@@ -69,17 +69,20 @@ Fehlerfall:
 - Methode/URL: `GET http://localhost:3000/api/entries-invalid`
 - Erwartet: `404`
 
+![Hoppscotch GET /api/entries-invalid (404)](docs/screenshots/hoppscotch-get-entries-404.png)
 
 #### 2. GET /api/entries/:id
 Erfolgsfall:
 - Methode/URL: `GET http://localhost:3000/api/entries/:id` (mit existierender `id`)
 - Erwartet: `200`
 
+![Hoppscotch GET /api/entries/:id (200)](docs/screenshots/hoppscotch-get-entry-by-id-200.png)
 
 Fehlerfall:
-- Methode/URL: `GET http://localhost:3000/api/entries/entry_does_not_exist_999`
+- Methode/URL: `GET http://localhost:3000/api/entries/entry_999999`
 - Erwartet: `404`
 
+![Hoppscotch GET /api/entries/:id (404)](docs/screenshots/hoppscotch-get-entry-by-id-404.png)
 
 #### 3. POST /api/entries
 Erfolgsfall:
