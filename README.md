@@ -160,13 +160,13 @@ Diese nested API ergänzt das flache CRUD-Design sinnvoll, ohne die API unnötig
 
 ### Tabellen-Skizze
 
-| Tabelle | Wichtige Felder | PK | FK |
-|---|---|---|---|
-| places | id, city, country, createdAt | id | - |
-| entries | id, placeId, title, description, rating, category, visitDate, createdAt | id | placeId -> places.id |
-| trips | id, name, createdAt | id | - |
-| wishlist | id, place, country, status, note, createdAt | id | - |
-| entryImages | id, entryId, imageUrl, createdAt | id | entryId -> entries.id |
+| Tabelle     | Wichtige Felder                                                         | PK | FK                    |
+|-------------|--------------------------------------------------------------------------|----|-----------------------|
+| places      | id, city, country, createdAt                                             | id | –                     |
+| entries     | id, placeId, title, description, rating, category, visitDate, createdAt | id | placeId -> places.id  |
+| trips       | id, name, createdAt                                                      | id | –                     |
+| wishlist    | id, place, country, status, note, createdAt                              | id | –                     |
+| entryImages | id, entryId, imageUrl, createdAt                                         | id | entryId -> entries.id |
 
 ### Beziehungen
 
