@@ -3,8 +3,10 @@ import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
+const prisma = new PrismaClient();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_FILE = path.join(__dirname, '..', 'places.json');
@@ -180,53 +182,90 @@ const applyImageCleanup = (existingEntry, keptImages) => {
 };
 
 router.get('/entries', asyncHandler(async (req, res) => {
-  refreshEntriesCache();
-  res.json(entries);
+  try {
+    const allEntries = await prisma.entry.findMany({
+      include: {
+        place: true,
+        images: true,
+      },
+    });
+
+    res.json(allEntries);
+  } catch (error) {
+    console.error('Failed to fetch entries from database:', error);
+    res.status(500).json({
+      error: 'Failed to load entries from database',
+      message: error instanceof Error ? error.message : 'Unknown server error',
+    });
+  }
 }));
 
 router.get('/entries/:id', asyncHandler(async (req, res) => {
-  refreshEntriesCache();
-  const entry = entries.find((currentEntry) => currentEntry.id === req.params.id);
-  if (!entry) {
-    return res.status(404).json({ error: 'Entry not found' });
+  try {
+    const entry = await prisma.entry.findUnique({
+      where: { id: req.params.id },
+      include: {
+        place: true,
+        images: true,
+      },
+    });
+
+    if (!entry) {
+      return res.status(404).json({ error: 'Entry not found' });
+    }
+
+    res.json(entry);
+  } catch (error) {
+    console.error('Failed to fetch entry from database:', error);
+    res.status(500).json({
+      error: 'Failed to load entry from database',
+      message: error instanceof Error ? error.message : 'Unknown server error',
+    });
   }
-  res.json(entry);
 }));
 
 const createEntryHandler = asyncHandler(async (req, res) => {
-  refreshEntriesCache();
-  const placeId = req.params.placeId || req.body.placeId;
-  const { title, description, rating, category, visitDate, address } = req.body;
+  try {
+    const placeId = req.params.placeId || req.body.placeId;
+    const { title, description, rating, category, visitDate } = req.body;
 
-  if (isMissing(placeId) || isMissing(title) || isMissing(description) || isMissing(rating) || isMissing(category)) {
-    return res.status(400).json({ error: 'placeId, title, description, rating and category are required' });
+    if (isMissing(placeId) || isMissing(title) || isMissing(description) || isMissing(rating) || isMissing(category)) {
+      return res.status(400).json({ error: 'placeId, title, description, rating and category are required' });
+    }
+
+    // Verify place exists
+    const place = await prisma.place.findUnique({
+      where: { id: placeId },
+    });
+
+    if (!place) {
+      return res.status(404).json({ error: 'Place not found' });
+    }
+
+    // Create entry in database
+    const newEntry = await prisma.entry.create({
+      data: {
+        placeId,
+        title,
+        description,
+        rating: Number(rating),
+        category,
+        visitDate: visitDate ? new Date(visitDate) : new Date(),
+      },
+      include: {
+        place: true,
+        images: true,
+      },
+    });
+
+    res.status(201).json(newEntry);
+  } catch (error) {
+    console.error('Failed to create entry:', error);
+    res.status(500).json({
+      error: 'Failed to create entry in database',
+      message: error instanceof Error ? error.message : 'Unknown server error',
+    });
   }
-
-  const places = readPlaces();
-  const place = findPlace(places, placeId);
-  if (!place) {
-    return res.status(404).json({ error: 'Place not found' });
-  }
-
-  const newEntry = {
-    id: `entry_${Date.now().toString()}`,
-    placeId,
-    title,
-    description,
-    rating: Number(rating),
-    category,
-    visitDate: visitDate || new Date().toISOString(),
-    address: address || '',
-    tags: parseTags(req.body.tags),
-    imageUrls: [...getImageUrls(req), ...(Array.isArray(req.body.imageUrls) ? req.body.imageUrls : [])],
-    createdAt: new Date().toISOString(),
-  };
-
-  place.entries = [...(place.entries || []), newEntry];
-  writePlaces(places);
-  entries.push({ ...newEntry });
-
-  res.status(201).json(newEntry);
 });
 
 router.post('/entries', upload.array('images', 10), createEntryHandler);
@@ -274,7 +313,62 @@ const updateEntryHandler = asyncHandler(async (req, res) => {
   res.json(updatedEntry);
 });
 
-router.put('/entries/:id', upload.array('images', 10), updateEntryHandler);
+const updateEntryByIdHandler = asyncHandler(async (req, res) => {
+  try {
+    const entryId = req.params.id;
+    const existingEntry = await prisma.entry.findUnique({
+      where: { id: entryId },
+    });
+
+    if (!existingEntry) {
+      return res.status(404).json({ error: 'Entry not found' });
+    }
+
+    const placeId = req.body.placeId ?? existingEntry.placeId;
+    const title = req.body.title ?? existingEntry.title;
+    const description = req.body.description ?? existingEntry.description;
+    const rating = req.body.rating ?? existingEntry.rating;
+    const category = req.body.category ?? existingEntry.category;
+
+    if (isMissing(placeId) || isMissing(title) || isMissing(description) || isMissing(rating) || isMissing(category)) {
+      return res.status(400).json({ error: 'placeId, title, description, rating and category are required' });
+    }
+
+    const place = await prisma.place.findUnique({
+      where: { id: placeId },
+    });
+
+    if (!place) {
+      return res.status(404).json({ error: 'Place not found' });
+    }
+
+    const updatedEntry = await prisma.entry.update({
+      where: { id: entryId },
+      data: {
+        placeId,
+        title,
+        description,
+        rating: Number(rating),
+        category,
+        visitDate: req.body.visitDate ? new Date(req.body.visitDate) : existingEntry.visitDate,
+      },
+      include: {
+        place: true,
+        images: true,
+      },
+    });
+
+    res.json(updatedEntry);
+  } catch (error) {
+    console.error('Failed to update entry:', error);
+    res.status(500).json({
+      error: 'Failed to update entry in database',
+      message: error instanceof Error ? error.message : 'Unknown server error',
+    });
+  }
+});
+
+router.put('/entries/:id', upload.array('images', 10), updateEntryByIdHandler);
 router.put('/places/:placeId/entries/:entryId', upload.array('images', 10), updateEntryHandler);
 
 const deleteEntryHandler = asyncHandler(async (req, res) => {
@@ -302,7 +396,41 @@ const deleteEntryHandler = asyncHandler(async (req, res) => {
   res.status(204).send();
 });
 
-router.delete('/entries/:id', deleteEntryHandler);
+const deleteEntryByIdHandler = asyncHandler(async (req, res) => {
+  try {
+    const entryId = req.params.id;
+
+    if (isMissing(entryId)) {
+      return res.status(400).json({ error: 'Entry id is required' });
+    }
+
+    const existingEntry = await prisma.entry.findUnique({
+      where: { id: entryId },
+    });
+
+    if (!existingEntry) {
+      return res.status(404).json({ error: 'Entry not found' });
+    }
+
+    const deletedEntry = await prisma.entry.delete({
+      where: { id: entryId },
+      include: {
+        place: true,
+        images: true,
+      },
+    });
+
+    res.json(deletedEntry);
+  } catch (error) {
+    console.error('Failed to delete entry:', error);
+    res.status(500).json({
+      error: 'Failed to delete entry from database',
+      message: error instanceof Error ? error.message : 'Unknown server error',
+    });
+  }
+});
+
+router.delete('/entries/:id', deleteEntryByIdHandler);
 router.delete('/places/:placeId/entries/:entryId', deleteEntryHandler);
 
 router.get('/places/:placeId/entries', asyncHandler(async (req, res) => {

@@ -175,10 +175,26 @@ Diese nested API ergänzt das flache CRUD-Design sinnvoll, ohne die API unnötig
 - trips n:m entries (typisch ueber Zwischentabelle, z. B. tripEntries mit tripId + entryId)
 - wishlist ist in diesem Modell eigenstaendig (keine direkte FK-Beziehung)
 
-### Pflichtfelder (NOT NULL)
+### Pflichtfelder 
 
 - places: id, city, country, createdAt
 - entries: id, placeId, title, description, rating, category, createdAt
 - trips: id, name, createdAt
 - wishlist: id, place, country, status, createdAt
 - entryImages: id, entryId, imageUrl, createdAt
+
+### Die Mock-Daten-Handler ersetzen
+
+Iteration 1
+Prompt:
+"Ersetze die Mock-Daten-Handler durch Prisma-Queries."
+
+Problem:
+Der Prompt war zu allgemein. Die Antwort hat zwar Prisma benutzt, aber das Error-Handling war nicht klar genug definiert. Vor allem fehlten saubere Regeln für 400, 404 und 500, wodurch die API uneinheitlich wirkt.
+
+Iteration 2
+Prompt:
+"Ersetze die Mock-Daten-Handler durch Prisma-Queries. Nutze bei ID-basierten Routen ein where-Objekt, fange Fehler mit try/catch ab und gib bei Datenbankfehlern 500 zurück."
+
+Verbesserung:
+Die zweite Version war deutlich besser. Die Queries waren genauer formuliert, die Fehlerbehandlung war klarer und die API verhielt sich konsistenter. Dadurch wurde der Code verständlicher, robuster und besser für den weiteren Ausbau geeignet.
