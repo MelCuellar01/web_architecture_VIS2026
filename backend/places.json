@@ -5,43 +5,17 @@
     "country": "Japan",
     "entries": [
       {
-        "id": "entry_1776715285873",
+        "id": "entry_1777215637584",
         "placeId": "place_1774482400960",
-        "title": "Casa Gaudi",
-        "description": "Beautiful architecture",
-        "rating": 4,
-        "category": "landmark",
-        "visitDate": "2026-04-20T20:01:25.873Z",
+        "title": "tokyo",
+        "description": "beautiful ",
+        "rating": 5,
+        "category": "Other",
+        "visitDate": "2026-04-26T00:00:00.000Z",
         "address": "",
         "tags": [],
         "imageUrls": [],
-        "createdAt": "2026-04-20T20:01:25.874Z"
-      },
-      {
-        "id": "entry_1776717591348",
-        "placeId": "place_1774482400960",
-        "title": "Casa Gaudi",
-        "description": "Beautiful architecture",
-        "rating": 4,
-        "category": "landmark",
-        "visitDate": "2026-04-20T20:39:51.348Z",
-        "address": "",
-        "tags": [],
-        "imageUrls": [],
-        "createdAt": "2026-04-20T20:39:51.348Z"
-      },
-      {
-        "id": "entry_1776718070010",
-        "placeId": "place_1774482400960",
-        "title": "Casa Gaudi",
-        "description": "Beautiful architecture",
-        "rating": 4,
-        "category": "landmark",
-        "visitDate": "2026-04-20T20:47:50.010Z",
-        "address": "",
-        "tags": [],
-        "imageUrls": [],
-        "createdAt": "2026-04-20T20:47:50.010Z"
+        "createdAt": "2026-04-26T15:00:37.585Z"
       }
     ],
     "createdAt": "2026-03-25T23:46:40.960Z"
@@ -110,5 +84,12 @@
       }
     ],
     "createdAt": "2026-03-30T16:37:21.126Z"
+  },
+  {
+    "id": "place_1777216676970",
+    "city": "Sevilla",
+    "country": "Spain",
+    "entries": [],
+    "createdAt": "2026-04-26T15:17:56.970Z"
   }
 ]
