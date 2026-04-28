@@ -182,8 +182,7 @@ Diese nested API ergänzt das flache CRUD-Design sinnvoll, ohne die API unnötig
 - trips: id, name, createdAt
 - wishlist: id, place, country, status, createdAt
 - entryImages: id, entryId, imageUrl, createdAt
-
-### Die Mock-Daten-Handler ersetzen
+## Die Mock-Daten-Handler ersetzen
 
 Iteration 1
 Prompt:
@@ -199,7 +198,7 @@ Prompt:
 Verbesserung:
 Die zweite Version war deutlich besser. Die Queries waren genauer formuliert, die Fehlerbehandlung war klarer und die API verhielt sich konsistenter. Dadurch wurde der Code verständlicher, robuster und besser für den weiteren Ausbau geeignet.
 
-### Persistenz-Test
+## Persistenz-Test
 
 Um zu überprüfen, ob die Daten dauerhaft in der Datenbank gespeichert werden, wurde folgender Test durchgeführt:
 
@@ -212,3 +211,11 @@ Um zu überprüfen, ob die Daten dauerhaft in der Datenbank gespeichert werden, 
 
 **Ergebnis:**
 Der zuvor erstellte Eintrag war nach dem Neustart des Servers weiterhin vorhanden. Dies bestätigt, dass die Daten korrekt in der SQLite-Datenbank über Prisma gespeichert werden.
+
+## Architekturentscheidung
+
+Strukturierte Daten wie Places, Entries und Trips werden in der Datenbank gespeichert, da sie miteinander verknüpft sind und konsistent abgefragt werden müssen. 
+
+Für größere Dateien wie Bilder wäre langfristig ein Cloud Object Store wie S3 sinnvoll, da dieser besser für Medien geeignet ist. Redis könnte zusätzlich für Caching genutzt werden, um die Performance bei häufigen Anfragen zu verbessern.
+
+## Studio Session 05: Security, Authentifizierung & Autorisierung
