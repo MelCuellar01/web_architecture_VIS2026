@@ -208,8 +208,7 @@ Um zu überprüfen, ob die Daten dauerhaft in der Datenbank gespeichert werden, 
 3. Der Server wurde erneut gestartet.
 4. Mit einem `GET`-Request wurden alle Einträge abgerufen.
 
-![Persistenz-Test Screenshot](./screenshots/persistence-test.png)
-
+![Persistenz-Test Screenshot](./docs/screenshots/pesistence-test.png)
 
 **Ergebnis:**
 Der zuvor erstellte Eintrag war nach dem Neustart des Servers weiterhin vorhanden. Dies bestätigt, dass die Daten korrekt in der SQLite-Datenbank über Prisma gespeichert werden.
