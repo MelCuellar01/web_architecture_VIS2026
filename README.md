@@ -182,6 +182,7 @@ Diese nested API ergänzt das flache CRUD-Design sinnvoll, ohne die API unnötig
 - trips: id, name, createdAt
 - wishlist: id, place, country, status, createdAt
 - entryImages: id, entryId, imageUrl, createdAt
+
 ## Die Mock-Daten-Handler ersetzen
 
 Iteration 1
