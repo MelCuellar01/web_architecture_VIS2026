@@ -198,3 +198,18 @@ Prompt:
 
 Verbesserung:
 Die zweite Version war deutlich besser. Die Queries waren genauer formuliert, die Fehlerbehandlung war klarer und die API verhielt sich konsistenter. Dadurch wurde der Code verständlicher, robuster und besser für den weiteren Ausbau geeignet.
+
+### Persistenz-Test
+
+Um zu überprüfen, ob die Daten dauerhaft in der Datenbank gespeichert werden, wurde folgender Test durchgeführt:
+
+1. Der Server wurde gestartet und über Hoppscotch ein neuer Eintrag mittels `POST`-Request erstellt.
+2. Der Server wurde gestoppt (`Ctrl + C`).
+3. Der Server wurde erneut gestartet.
+4. Mit einem `GET`-Request wurden alle Einträge abgerufen.
+
+![Persistenz-Test Screenshot](./screenshots/persistence-test.png)
+
+
+**Ergebnis:**
+Der zuvor erstellte Eintrag war nach dem Neustart des Servers weiterhin vorhanden. Dies bestätigt, dass die Daten korrekt in der SQLite-Datenbank über Prisma gespeichert werden.
