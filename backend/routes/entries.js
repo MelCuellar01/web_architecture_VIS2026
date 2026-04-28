@@ -308,7 +308,18 @@ router.delete('/places/:placeId/entries/:entryId', deleteEntryHandler);
 
 router.get('/places/:placeId/entries', asyncHandler(async (req, res) => {
   try {
-    const placeId = req.params.placeId;
+    const rawPlaceId = req.params.placeId;
+    const placeId = String(rawPlaceId ?? '').trim().replace(/^"(.*)"$/, '$1');
+
+    console.log('[GET /places/:placeId/entries]', {
+      originalUrl: req.originalUrl,
+      rawPlaceId,
+      normalizedPlaceId: placeId,
+    });
+
+    if (isMissing(placeId)) {
+      return res.status(400).json({ error: 'placeId is required' });
+    }
 
     // Check if place exists using Prisma
     const place = await prisma.place.findUnique({
