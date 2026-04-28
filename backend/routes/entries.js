@@ -105,28 +105,35 @@ router.get('/entries/:id', asyncHandler(async (req, res) => {
 
 const createEntryHandler = asyncHandler(async (req, res) => {
   try {
+    // Get placeId from URL params first, then from request body
     const placeId = req.params.placeId || req.body.placeId;
     const { title, description, rating, category, visitDate } = req.body;
 
-    if (isMissing(placeId) || isMissing(title) || isMissing(description) || isMissing(rating) || isMissing(category)) {
-      return res.status(400).json({ error: 'placeId, title, description, rating and category are required' });
+    // Validate required fields
+    if (isMissing(placeId)) {
+      return res.status(400).json({ error: 'placeId is required' });
+    }
+    if (isMissing(title) || isMissing(description) || isMissing(rating) || isMissing(category)) {
+      return res.status(400).json({ error: 'title, description, rating and category are required' });
     }
 
+    // Verify place exists using Prisma (keep ID as string, no conversion)
     const place = await prisma.place.findUnique({
       where: { id: placeId },
-      select: { id: true },
     });
 
     if (!place) {
-      return res.status(404).json({ error: 'Place not found' });
+      return res.status(404).json({ error: `Place not found with ID: ${placeId}` });
     }
 
+    // Process images from multiple sources
     const imageUrls = [
       ...parseList(req.body.imageUrls),
       ...parseList(req.body.existingImages),
       ...(req.files || []).map((file) => `/uploads/${file.filename}`),
     ];
 
+    // Build entry data
     const data = {
       placeId,
       title,
@@ -136,12 +143,14 @@ const createEntryHandler = asyncHandler(async (req, res) => {
       visitDate: visitDate ? new Date(visitDate) : new Date(),
     };
 
+    // Add images if any
     if (imageUrls.length > 0) {
       data.images = {
         create: [...new Set(imageUrls)].map((imageUrl) => ({ imageUrl })),
       };
     }
 
+    // Create entry with Prisma
     const newEntry = await prisma.entry.create({
       data,
       include: entryInclude,
@@ -165,6 +174,7 @@ const updateEntryHandler = asyncHandler(async (req, res) => {
     const entryId = req.params.id || req.params.entryId;
     const placeIdOverride = req.params.placeId || null;
 
+    // Fetch existing entry
     const existingEntry = await prisma.entry.findUnique({
       where: { id: entryId },
       include: {
@@ -176,25 +186,28 @@ const updateEntryHandler = asyncHandler(async (req, res) => {
       return res.status(404).json({ error: 'Entry not found' });
     }
 
+    // Determine which placeId to use (from URL params, request body, or existing entry)
     const placeId = placeIdOverride || req.body.placeId || existingEntry.placeId;
     const title = req.body.title ?? existingEntry.title;
     const description = req.body.description ?? existingEntry.description;
     const rating = req.body.rating ?? existingEntry.rating;
     const category = req.body.category ?? existingEntry.category;
 
+    // Validate required fields
     if (isMissing(placeId) || isMissing(title) || isMissing(description) || isMissing(rating) || isMissing(category)) {
       return res.status(400).json({ error: 'placeId, title, description, rating and category are required' });
     }
 
+    // Verify place exists with Prisma (keep ID as string, no conversion)
     const place = await prisma.place.findUnique({
       where: { id: placeId },
-      select: { id: true },
     });
 
     if (!place) {
-      return res.status(404).json({ error: 'Place not found' });
+      return res.status(404).json({ error: `Place not found with ID: ${placeId}` });
     }
 
+    // Handle image updates
     const currentImageUrls = existingEntry.images.map((image) => image.imageUrl);
     const keptImageUrls = req.body.existingImages !== undefined
       ? parseList(req.body.existingImages)
@@ -205,6 +218,7 @@ const updateEntryHandler = asyncHandler(async (req, res) => {
     const removedUrls = currentImageUrls.filter((url) => !uniqueKeptUrls.includes(url));
     const uploadedUrls = (req.files || []).map((file) => `/uploads/${file.filename}`);
 
+    // Delete removed images from filesystem
     if (removedUrls.length > 0) {
       deleteFiles(removedUrls);
       await prisma.entryImage.deleteMany({
@@ -217,6 +231,7 @@ const updateEntryHandler = asyncHandler(async (req, res) => {
       });
     }
 
+    // Add uploaded images to database
     if (uploadedUrls.length > 0) {
       await prisma.entryImage.createMany({
         data: uploadedUrls.map((imageUrl) => ({
@@ -226,6 +241,7 @@ const updateEntryHandler = asyncHandler(async (req, res) => {
       });
     }
 
+    // Update the entry with Prisma
     await prisma.entry.update({
       where: { id: entryId },
       data: {
@@ -238,6 +254,7 @@ const updateEntryHandler = asyncHandler(async (req, res) => {
       },
     });
 
+    // Fetch and return updated entry
     const updatedEntry = await prisma.entry.findUnique({
       where: { id: entryId },
       include: entryInclude,
@@ -291,23 +308,24 @@ router.delete('/places/:placeId/entries/:entryId', deleteEntryHandler);
 
 router.get('/places/:placeId/entries', asyncHandler(async (req, res) => {
   try {
+    const placeId = req.params.placeId;
+
+    // Check if place exists using Prisma
     const place = await prisma.place.findUnique({
-      where: { id: req.params.placeId },
-      select: { id: true },
+      where: { id: placeId },
     });
 
     if (!place) {
       return res.status(404).json({ error: 'Place not found' });
     }
 
+    // Get entries for the place
     const entries = await prisma.entry.findMany({
-      where: { placeId: req.params.placeId },
+      where: { placeId },
       include: entryInclude,
-      orderBy: {
-        createdAt: 'asc',
-      },
     });
 
+    // Return 200 with entries (empty array if no entries exist)
     res.json(entries);
   } catch (error) {
     console.error('Failed to fetch place entries from database:', error);
