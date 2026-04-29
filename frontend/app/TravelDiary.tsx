@@ -82,11 +82,26 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-/** Normalize legacy imageUrl field into imageUrls array */
-function getImageUrls(entry: Entry): string[] {
-  if (entry.imageUrls && entry.imageUrls.length > 0) return entry.imageUrls;
-  if (entry.imageUrl) return [entry.imageUrl];
-  return [];
+/** Collect and normalize image URLs from multiple possible shapes (images/imageUrls/imageUrl).
+ * Returns absolute URLs when possible (prefixes `/uploads` with `API_BASE`).
+ */
+function getImageUrls(entry: any): string[] {
+  const candidates: string[] = [];
+  if (entry?.images && Array.isArray(entry.images) && entry.images.length > 0) {
+    entry.images.forEach((i: any) => { if (i && i.imageUrl) candidates.push(i.imageUrl); });
+  }
+  if (entry?.imageUrls && Array.isArray(entry.imageUrls) && entry.imageUrls.length > 0) {
+    entry.imageUrls.forEach((u: string) => { if (u) candidates.push(u); });
+  }
+  if (entry?.imageUrl) candidates.push(entry.imageUrl);
+
+  return candidates
+    .filter(Boolean)
+    .map((u) => {
+      if (u.startsWith("http://") || u.startsWith("https://")) return u;
+      if (u.startsWith("/uploads")) return `${API_BASE}${u}`;
+      return u;
+    });
 }
 
 /** Build a shareable text for an entry */
@@ -175,7 +190,7 @@ function ImageCarousel({ urls, alt }: { urls: string[]; alt: string }) {
           </button>
         )}
         <div className="carousel-frame">
-          <img src={`${API_BASE}${urls[idx]}`} alt={alt} className="carousel-img" />
+          <img src={urls[idx]} alt={alt} className="carousel-img" />
         </div>
         {multi && (
           <button className="carousel-arrow carousel-right" onClick={next} aria-label="Next image">
@@ -371,10 +386,10 @@ function EntryForm({
           <label>Current Photos</label>
           <div className="existing-images-preview">
             {existingImages.map((url) => (
-              <div key={url} className="existing-img-thumb">
-                <img src={`${API_BASE}${url}`} alt="existing" />
-                <button type="button" className="remove-img-btn" onClick={() => removeExistingImage(url)} aria-label="Remove image">×</button>
-              </div>
+            <div key={url} className="existing-img-thumb">
+              <img src={url} alt="existing" />
+              <button type="button" className="remove-img-btn" onClick={() => removeExistingImage(url)} aria-label="Remove image">×</button>
+            </div>
             ))}
           </div>
         </div>
