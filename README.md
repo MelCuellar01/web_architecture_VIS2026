@@ -220,3 +220,44 @@ Strukturierte Daten wie Places, Entries und Trips werden in der Datenbank gespei
 Für größere Dateien wie Bilder wäre langfristig ein Cloud Object Store wie S3 sinnvoll, da dieser besser für Medien geeignet ist. Redis könnte zusätzlich für Caching genutzt werden, um die Performance bei häufigen Anfragen zu verbessern.
 
 ## Studio Session 05: Security, Authentifizierung & Autorisierung
+
+## Security Audit - OWASP Top 10
+
+| OWASP Punkt | Status | Ergebnis / Begründung | Empfohlener Fix |
+|---|---|---|---|
+| **A01 Broken Access Control** | ✅ Abgedeckt | Alle geschützten Routen erfordern `authenticate` Middleware. DB-Abfragen filtern nach `userId`. Benutzer können nicht auf Daten anderer zugreifen. | Keine Änderung erforderlich |
+| **A02 Cryptographic Failures** | ✅ Abgedeckt | Passwörter werden mit bcrypt (10 Saltrounds) gehasht. JWT wird als HttpOnly-Cookie gespeichert. JWT_SECRET aus `.env`. Ablaufzeit: 24h. Plaintext-Passwörter werden nie zurückgegeben. | Keine Änderung erforderlich |
+| **A03 Injection** | ⚠️ Teilweise | **DB-Queries**: Prisma schützt vor SQL-Injection. **Directory Traversal**: `filePathFromUrl()` in `routes/entries.js` validiert nicht, dass Dateipfade im Upload-Verzeichnis bleiben. Angreifer könnte `../` zur Dateilöschung außerhalb von `/uploads` nutzen. | **Implementiert**: Pfadvalidierung mit `path.resolve()` und Verzeichnischeck hinzugefügt (entries.js) |
+| **A07 Authentication Failures** | ⚠️ Teilweise | **User Enumeration**: ✅ Login nutzt identische Fehlermeldung für falsche E-Mail/Passwort. **Passwort-Stärke**: ❌ Keine Validierung; akzeptiert beliebig kurze Passwörter. **JWT Expiration**: ✅ 24h konfiguriert. | **Implementiert**: Mindestkontrolle für 8 Zeichen bei Register hinzugefügt (auth.js) |
+
+### Änderungen durchgeführt:
+1. **routes/auth.js**: Passwort-Mindestlänge von 8 Zeichen hinzugefügt
+2. **routes/entries.js**: Directory-Traversal-Schutz implementiert (Pfadvalidierung mit `path.resolve()`)
+
+### Zusätzliche Beobachtungen:
+- Trips und Wishlist verwenden JSON-Datei-Speicherung statt Prisma-Datenbank (nicht ideal für Skalierung)
+- Schema: Trips/Wishlist-Modelle in `schema.prisma` haben kein `userId` Feld, obwohl Code es nutzt
+
+## Lücken in API
+
+### Welche drei Dinge kann ein anonymer Nutzer mit eurer aktuellen API anstellen, die er nicht dürfte?
+
+Da die API komplett offen ist, kann ein anonymer Nutzer:
+
+1. **Alle Daten auslesen (GET):**  
+   Über Endpunkte wie `/api/entries` oder `/api/places` konnte jeder Nutzer alle gespeicherten Daten einsehen, auch die von anderen Nutzern.
+
+2. **Fremde Daten löschen (DELETE):**  
+   Durch Aufrufe wie `DELETE /api/entries/:id` oder `DELETE /api/places/:id` konnte ein anonymer Nutzer beliebige Einträge oder Orte löschen – unabhängig davon, wer sie erstellt hat.
+
+3. **Daten anderer Nutzer manipulieren:**  
+   Da keine Authentifizierung oder Autorisierung vorhanden war, konnte ein Nutzer gezielt IDs erraten oder auslesen und so Daten anderer Nutzer verändern oder entfernen.
+
+Diese Lücken zeigen, dass ohne Authentifizierung und Zugriffskontrolle keine Datensicherheit gewährleistet ist.
+
+## authenticate-Middleware
+
+### Was passiert, wenn jemand versuchen würde, den JWT-Payload manuell verändert (z.B. die userId auf eine fremde ändert)? Warum funktioniert das nicht?
+
+A: Wenn jemand versuchen würde, den JWT-Payload manuell zu verändern (z. B. die userId zu manipulieren), würde das nicht funktionieren. Der JWT ist mit einem geheimen Schlüssel (JWT_SECRET) signiert. Sobald der Payload verändert wird, stimmt die Signatur nicht mehr mit dem Token überein. Bei der Überprüfung mit jsonwebtoken.verify() wird das Token daher als ungültig erkannt und der Server antwortet mit einem 401 Unauthorized Fehler.
+

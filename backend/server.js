@@ -8,6 +8,9 @@ import entriesRouter from './routes/entries.js';
 import placesRouter from './routes/places.js';
 import tripsRouter from './routes/trips.js';
 import wishlistRouter from './routes/wishlist.js';
+import authRouter from './routes/auth.js';
+import authenticate from './middleware/authenticate.js';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,16 +23,24 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3001',
+  credentials: true
+}));
+app.use(cookieParser());
 app.use(express.json());
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(uploadsDir));
 
-app.use('/api', placesRouter);
-app.use('/api', entriesRouter);
-app.use('/api', tripsRouter);
-app.use('/api', wishlistRouter);
+// Public auth routes
+app.use('/api/auth', authRouter);
+
+// Protected resource routes (apply `authenticate` at the mount level)
+app.use('/api', authenticate, placesRouter);
+app.use('/api', authenticate, entriesRouter);
+app.use('/api', authenticate, tripsRouter);
+app.use('/api', authenticate, wishlistRouter);
 
 app.use((err, req, res, next) => {
     console.error(err.stack);

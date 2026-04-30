@@ -2,8 +2,8 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
 const router = express.Router();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const WISHLIST_FILE = path.join(__dirname, '..', 'wishlist.json');
@@ -23,8 +23,10 @@ const writeWishlist = (data) => {
   fs.writeFileSync(WISHLIST_FILE, JSON.stringify(data, null, 2));
 };
 
+const getUserWishlist = (userId) => readWishlist().filter((item) => item.userId === userId);
+
 router.get('/wishlist', asyncHandler(async (req, res) => {
-  res.json(readWishlist());
+  res.json(getUserWishlist(req.user.userId));
 }));
 
 router.post('/wishlist', asyncHandler(async (req, res) => {
@@ -36,6 +38,7 @@ router.post('/wishlist', asyncHandler(async (req, res) => {
   const allowed = ['not-visited', 'upcoming', 'done'];
   const newItem = {
     id: 'wish_' + Date.now().toString(),
+    userId: req.user.userId,
     place,
     country,
     status: allowed.includes(status) ? status : 'not-visited',
@@ -51,7 +54,7 @@ router.post('/wishlist', asyncHandler(async (req, res) => {
 
 router.put('/wishlist/:id', asyncHandler(async (req, res) => {
   const items = readWishlist();
-  const index = items.findIndex((item) => item.id === req.params.id);
+  const index = items.findIndex((item) => item.id === req.params.id && item.userId === req.user.userId);
   if (index === -1) return res.status(404).json({ error: 'Item not found' });
 
   const { place, country, status, note } = req.body;
@@ -67,7 +70,7 @@ router.put('/wishlist/:id', asyncHandler(async (req, res) => {
 
 router.delete('/wishlist/:id', asyncHandler(async (req, res) => {
   const items = readWishlist();
-  const index = items.findIndex((item) => item.id === req.params.id);
+  const index = items.findIndex((item) => item.id === req.params.id && item.userId === req.user.userId);
   if (index === -1) return res.status(404).json({ error: 'Item not found' });
 
   items.splice(index, 1);

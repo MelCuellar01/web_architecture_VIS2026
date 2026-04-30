@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { authFetch } from "../lib/authFetch";
 
 const PlacesMap = dynamic(() => import("./PlacesMap"), { ssr: false });
 
@@ -279,9 +281,10 @@ function EntryForm({
       ? `${API_BASE}/api/places/${encodeURIComponent(placeId)}/entries/${encodeURIComponent(editEntry.id)}`
       : `${API_BASE}/api/places/${encodeURIComponent(placeId)}/entries`;
 
-    await fetch(url, {
+    await authFetch(url, {
       method: editEntry ? "PUT" : "POST",
       body: formData,
+      credentials: "include",
     });
 
     setSubmitting(false);
@@ -422,7 +425,20 @@ export default function TravelDiary({
 }: {
   initialPlaces: Place[];
 }) {
+  const router = useRouter();
   const [places, setPlaces] = useState<Place[]>(initialPlaces);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const avatarRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [isAddingPlace, setIsAddingPlace] = useState(false);
   const [city, setCity] = useState("");
@@ -451,7 +467,7 @@ export default function TravelDiary({
 
   const fetchTrips = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/trips`);
+      const res = await authFetch(`${API_BASE}/api/trips`);
       const data: Trip[] = await res.json();
       setTrips(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } catch { /* ignore */ }
@@ -462,7 +478,7 @@ export default function TravelDiary({
   const handleCreateTrip = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTripName.trim()) return;
-    const res = await fetch(`${API_BASE}/api/trips`, {
+    const res = await authFetch(`${API_BASE}/api/trips`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: newTripName.trim() }),
@@ -475,7 +491,7 @@ export default function TravelDiary({
   };
 
   const handleDeleteTrip = async (tripId: string) => {
-    const res = await fetch(`${API_BASE}/api/trips/${encodeURIComponent(tripId)}`, { method: "DELETE" });
+    const res = await authFetch(`${API_BASE}/api/trips/${encodeURIComponent(tripId)}`, { method: "DELETE" });
     if (res.ok) {
       if (selectedTripId === tripId) { setSelectedTripId(null); setShowTrips(false); }
       await fetchTrips();
@@ -483,7 +499,7 @@ export default function TravelDiary({
   };
 
   const handleRemoveEntryFromTrip = async (tripId: string, entryId: string) => {
-    const res = await fetch(`${API_BASE}/api/trips/${encodeURIComponent(tripId)}/entries/${encodeURIComponent(entryId)}`, { method: "DELETE" });
+    const res = await authFetch(`${API_BASE}/api/trips/${encodeURIComponent(tripId)}/entries/${encodeURIComponent(entryId)}`, { method: "DELETE" });
     if (res.ok) await fetchTrips();
   };
 
@@ -525,7 +541,7 @@ export default function TravelDiary({
   const handleAddTripItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTrip) return;
-    const res = await fetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items`, {
+    const res = await authFetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ place: tripItemPlace.trim(), country: tripItemCountry.trim(), note: tripItemNote.trim(), category: tripItemCategory }),
@@ -543,7 +559,7 @@ export default function TravelDiary({
   const handleUpdateTripItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTrip || !editingTripItemId) return;
-    const res = await fetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(editingTripItemId)}`, {
+    const res = await authFetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(editingTripItemId)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ place: editTripItemPlace.trim(), country: editTripItemCountry.trim(), note: editTripItemNote.trim(), category: editTripItemCategory }),
@@ -556,7 +572,7 @@ export default function TravelDiary({
 
   const handleUpdateTripItemStatus = async (itemId: string, status: "pending" | "done") => {
     if (!selectedTrip) return;
-    const res = await fetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(itemId)}`, {
+    const res = await authFetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(itemId)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -566,7 +582,7 @@ export default function TravelDiary({
 
   const handleDeleteTripItem = async (itemId: string) => {
     if (!selectedTrip) return;
-    const res = await fetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(itemId)}`, { method: "DELETE" });
+    const res = await authFetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(itemId)}`, { method: "DELETE" });
     if (res.ok) await fetchTrips();
   };
 
@@ -593,7 +609,7 @@ export default function TravelDiary({
 
   const fetchWishlist = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/wishlist`);
+      const res = await authFetch(`${API_BASE}/api/wishlist`);
       const data: WishlistItem[] = await res.json();
       setWishlist(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } catch { /* ignore */ }
@@ -607,7 +623,7 @@ export default function TravelDiary({
   const handleAddWish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!wishPlace.trim() || !wishCountry.trim()) return;
-    const res = await fetch(`${API_BASE}/api/wishlist`, {
+    const res = await authFetch(`${API_BASE}/api/wishlist`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ place: wishPlace.trim(), country: wishCountry.trim(), note: wishNote.trim() }),
@@ -620,7 +636,7 @@ export default function TravelDiary({
   };
 
   const handleUpdateWishStatus = async (id: string, status: WishlistItem["status"]) => {
-    const res = await fetch(`${API_BASE}/api/wishlist/${encodeURIComponent(id)}`, {
+    const res = await authFetch(`${API_BASE}/api/wishlist/${encodeURIComponent(id)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -638,7 +654,7 @@ export default function TravelDiary({
   const handleUpdateWish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingWishId || !editWishPlace.trim() || !editWishCountry.trim()) return;
-    const res = await fetch(`${API_BASE}/api/wishlist/${encodeURIComponent(editingWishId)}`, {
+    const res = await authFetch(`${API_BASE}/api/wishlist/${encodeURIComponent(editingWishId)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ place: editWishPlace.trim(), country: editWishCountry.trim(), note: editWishNote.trim() }),
@@ -650,7 +666,7 @@ export default function TravelDiary({
   };
 
   const handleDeleteWish = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/wishlist/${encodeURIComponent(id)}`, { method: "DELETE" });
+    const res = await authFetch(`${API_BASE}/api/wishlist/${encodeURIComponent(id)}`, { method: "DELETE" });
     if (res.ok) await fetchWishlist();
   };
 
@@ -669,7 +685,7 @@ export default function TravelDiary({
   };
 
   const handleDeleteEntry = async (placeId: string, entryId: string) => {
-    const res = await fetch(
+    const res = await authFetch(
       `${API_BASE}/api/places/${encodeURIComponent(placeId)}/entries/${encodeURIComponent(entryId)}`,
       { method: "DELETE" }
     );
@@ -694,7 +710,7 @@ export default function TravelDiary({
   }, [places, favoriteIds]);
 
   const fetchPlaces = async () => {
-    const res = await fetch(`${API_BASE}/api/places`);
+    const res = await authFetch(`${API_BASE}/api/places`);
     const data: Place[] = await res.json();
     setPlaces(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
   };
@@ -709,10 +725,20 @@ export default function TravelDiary({
     setEditingEntry(null);
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await authFetch(`${API_BASE}/api/auth/logout`, { method: "POST" });
+    } catch (err) {
+      // ignore network errors during logout
+    } finally {
+      router.push("/login");
+    }
+  };
+
   const handleAddPlace = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!city || !country) return;
-    const res = await fetch(`${API_BASE}/api/places`, {
+    const res = await authFetch(`${API_BASE}/api/places`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ city, country }),
@@ -738,7 +764,7 @@ export default function TravelDiary({
 
   const deletePlaces = async (placeIds: string[]) => {
     for (const id of placeIds) {
-      await fetch(`${API_BASE}/api/places/${encodeURIComponent(id)}`, { method: "DELETE" });
+      await authFetch(`${API_BASE}/api/places/${encodeURIComponent(id)}`, { method: "DELETE" });
     }
     if (placeIds.includes(selectedPlaceId ?? "")) {
       setSelectedPlaceId(null);
@@ -1129,6 +1155,66 @@ export default function TravelDiary({
               {showEntryForm ? "Cancel" : "Add Entry"}
             </button>
           )}
+          <div ref={avatarRef} style={{ marginLeft: "auto", position: "relative" }}>
+            <button
+              className="avatar-btn"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-haspopup="true"
+              aria-expanded={menuOpen}
+              title="Account"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid rgba(0,0,0,0.08)",
+                background: "white",
+                cursor: "pointer",
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z" fill="#444"/>
+                <path d="M2 20c0-3.314 2.686-6 6-6h8c3.314 0 6 2.686 6 6v1H2v-1z" fill="#444" opacity="0.9"/>
+              </svg>
+            </button>
+
+            {menuOpen && (
+              <div className="avatar-menu" role="menu" style={{
+                position: "absolute",
+                right: 0,
+                marginTop: 8,
+                background: "#fff",
+                border: "1px solid rgba(0,0,0,0.08)",
+                borderRadius: 6,
+                boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
+                zIndex: 40,
+                minWidth: 140,
+                overflow: "hidden",
+              }}>
+                <button
+                  className="avatar-menu-item"
+                  onClick={async () => {
+                    setMenuOpen(false);
+                    await handleLogout();
+                  }}
+                  role="menuitem"
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "8px 12px",
+                    textAlign: "left",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </header>
 
         {showFilters && (

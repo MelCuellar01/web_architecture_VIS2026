@@ -3,8 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
+import authenticate from '../middleware/authenticate.js';
 
 const router = express.Router();
+
 const prisma = new PrismaClient();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,7 +38,9 @@ const placeInclude = {
 
 router.get('/places', asyncHandler(async (req, res) => {
   try {
+    const userId = req.user.userId;
     const places = await prisma.place.findMany({
+      where: { userId },
       include: placeInclude,
       orderBy: {
         createdAt: 'desc',
@@ -56,6 +60,7 @@ router.get('/places', asyncHandler(async (req, res) => {
 router.post('/places', asyncHandler(async (req, res) => {
   try {
     const { city, country } = req.body;
+    const userId = req.user.userId;
 
     if (isMissing(city) || isMissing(country)) {
       return res.status(400).json({ error: 'City and country are required' });
@@ -65,6 +70,7 @@ router.post('/places', asyncHandler(async (req, res) => {
       data: {
         city,
         country,
+        userId,
       },
       include: placeInclude,
     });
@@ -79,14 +85,13 @@ router.post('/places', asyncHandler(async (req, res) => {
   }
 }));
 
-
-
 router.delete('/places/:placeId', asyncHandler(async (req, res) => {
   try {
     const { placeId } = req.params;
+    const userId = req.user.userId;
 
-    const place = await prisma.place.findUnique({
-      where: { id: placeId },
+    const place = await prisma.place.findFirst({
+      where: { id: placeId, userId },
       include: {
         entries: {
           include: {

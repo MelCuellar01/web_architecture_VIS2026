@@ -2,8 +2,11 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
+
+const prisma = new PrismaClient();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const TRIPS_FILE = path.join(__dirname, '..', 'trips.json');
@@ -23,8 +26,11 @@ const writeTrips = (data) => {
   fs.writeFileSync(TRIPS_FILE, JSON.stringify(data, null, 2));
 };
 
+const getUserTrips = (userId) => readTrips().filter((trip) => trip.userId === userId);
+const findUserTrip = (userId, tripId) => getUserTrips(userId).find((trip) => trip.id === tripId);
+
 router.get('/trips', asyncHandler(async (req, res) => {
-  res.json(readTrips());
+  res.json(getUserTrips(req.user.userId));
 }));
 
 router.post('/trips', asyncHandler(async (req, res) => {
@@ -35,6 +41,7 @@ router.post('/trips', asyncHandler(async (req, res) => {
 
   const newTrip = {
     id: 'trip_' + Date.now().toString(),
+    userId: req.user.userId,
     name,
     entryRefs: [],
     items: [],
@@ -55,32 +62,45 @@ router.post('/trips/:tripId/entries', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'placeId and entryId are required' });
   }
 
-  const trips = readTrips();
-  const trip = trips.find((currentTrip) => currentTrip.id === tripId);
+  const trip = findUserTrip(req.user.userId, tripId);
   if (!trip) return res.status(404).json({ error: 'Trip not found' });
+
+  const entry = await prisma.entry.findFirst({
+    where: {
+      id: entryId,
+      placeId,
+      userId: req.user.userId,
+    },
+  });
+  if (!entry) return res.status(404).json({ error: 'Entry not found' });
+
   if (trip.entryRefs.some((ref) => ref.entryId === entryId)) {
     return res.status(409).json({ error: 'Entry already in trip' });
   }
 
-  trip.entryRefs.push({ placeId, entryId });
+  const trips = readTrips();
+  const tripIndex = trips.findIndex((currentTrip) => currentTrip.id === tripId && currentTrip.userId === req.user.userId);
+  if (tripIndex === -1) return res.status(404).json({ error: 'Trip not found' });
+
+  trips[tripIndex].entryRefs.push({ placeId, entryId });
   writeTrips(trips);
-  res.json(trip);
+  res.json(trips[tripIndex]);
 }));
 
 router.delete('/trips/:tripId/entries/:entryId', asyncHandler(async (req, res) => {
   const { tripId, entryId } = req.params;
   const trips = readTrips();
-  const trip = trips.find((currentTrip) => currentTrip.id === tripId);
-  if (!trip) return res.status(404).json({ error: 'Trip not found' });
+  const tripIndex = trips.findIndex((currentTrip) => currentTrip.id === tripId && currentTrip.userId === req.user.userId);
+  if (tripIndex === -1) return res.status(404).json({ error: 'Trip not found' });
 
-  trip.entryRefs = trip.entryRefs.filter((ref) => ref.entryId !== entryId);
+  trips[tripIndex].entryRefs = trips[tripIndex].entryRefs.filter((ref) => ref.entryId !== entryId);
   writeTrips(trips);
-  res.json(trip);
+  res.json(trips[tripIndex]);
 }));
 
 router.delete('/trips/:tripId', asyncHandler(async (req, res) => {
   const trips = readTrips();
-  const index = trips.findIndex((trip) => trip.id === req.params.tripId);
+  const index = trips.findIndex((trip) => trip.id === req.params.tripId && trip.userId === req.user.userId);
   if (index === -1) return res.status(404).json({ error: 'Trip not found' });
 
   trips.splice(index, 1);
@@ -92,9 +112,9 @@ router.post('/trips/:tripId/items', asyncHandler(async (req, res) => {
   const { tripId } = req.params;
   const { place, country, note, category, status } = req.body;
   const trips = readTrips();
-  const trip = trips.find((currentTrip) => currentTrip.id === tripId);
-  if (!trip) return res.status(404).json({ error: 'Trip not found' });
-  if (!trip.items) trip.items = [];
+  const tripIndex = trips.findIndex((currentTrip) => currentTrip.id === tripId && currentTrip.userId === req.user.userId);
+  if (tripIndex === -1) return res.status(404).json({ error: 'Trip not found' });
+  if (!trips[tripIndex].items) trips[tripIndex].items = [];
 
   const allowedStatuses = ['pending', 'done'];
   const newItem = {
@@ -107,7 +127,7 @@ router.post('/trips/:tripId/items', asyncHandler(async (req, res) => {
     createdAt: new Date().toISOString(),
   };
 
-  trip.items.push(newItem);
+  trips[tripIndex].items.push(newItem);
   writeTrips(trips);
   res.status(201).json(newItem);
 }));
@@ -115,36 +135,36 @@ router.post('/trips/:tripId/items', asyncHandler(async (req, res) => {
 router.put('/trips/:tripId/items/:itemId', asyncHandler(async (req, res) => {
   const { tripId, itemId } = req.params;
   const trips = readTrips();
-  const trip = trips.find((currentTrip) => currentTrip.id === tripId);
-  if (!trip) return res.status(404).json({ error: 'Trip not found' });
-  if (!trip.items) trip.items = [];
+  const tripIndex = trips.findIndex((currentTrip) => currentTrip.id === tripId && currentTrip.userId === req.user.userId);
+  if (tripIndex === -1) return res.status(404).json({ error: 'Trip not found' });
+  if (!trips[tripIndex].items) trips[tripIndex].items = [];
 
-  const index = trip.items.findIndex((item) => item.id === itemId);
+  const index = trips[tripIndex].items.findIndex((item) => item.id === itemId);
   if (index === -1) return res.status(404).json({ error: 'Item not found' });
 
   const { place, country, note, category, status } = req.body;
   const allowedStatuses = ['pending', 'done'];
-  if (place !== undefined) trip.items[index].place = place;
-  if (country !== undefined) trip.items[index].country = country;
-  if (note !== undefined) trip.items[index].note = note;
-  if (category !== undefined) trip.items[index].category = category;
-  if (status && allowedStatuses.includes(status)) trip.items[index].status = status;
+  if (place !== undefined) trips[tripIndex].items[index].place = place;
+  if (country !== undefined) trips[tripIndex].items[index].country = country;
+  if (note !== undefined) trips[tripIndex].items[index].note = note;
+  if (category !== undefined) trips[tripIndex].items[index].category = category;
+  if (status && allowedStatuses.includes(status)) trips[tripIndex].items[index].status = status;
 
   writeTrips(trips);
-  res.json(trip.items[index]);
+  res.json(trips[tripIndex].items[index]);
 }));
 
 router.delete('/trips/:tripId/items/:itemId', asyncHandler(async (req, res) => {
   const { tripId, itemId } = req.params;
   const trips = readTrips();
-  const trip = trips.find((currentTrip) => currentTrip.id === tripId);
-  if (!trip) return res.status(404).json({ error: 'Trip not found' });
-  if (!trip.items) trip.items = [];
+  const tripIndex = trips.findIndex((currentTrip) => currentTrip.id === tripId && currentTrip.userId === req.user.userId);
+  if (tripIndex === -1) return res.status(404).json({ error: 'Trip not found' });
+  if (!trips[tripIndex].items) trips[tripIndex].items = [];
 
-  const index = trip.items.findIndex((item) => item.id === itemId);
+  const index = trips[tripIndex].items.findIndex((item) => item.id === itemId);
   if (index === -1) return res.status(404).json({ error: 'Item not found' });
 
-  trip.items.splice(index, 1);
+  trips[tripIndex].items.splice(index, 1);
   writeTrips(trips);
   res.json({ message: 'Trip item deleted' });
 }));
