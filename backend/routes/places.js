@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
 import authenticate from '../middleware/authenticate.js';
+import { broadcastSseEvent } from '../utils/sse.js';
 
 const router = express.Router();
 
@@ -74,6 +75,8 @@ router.post('/places', asyncHandler(async (req, res) => {
       },
       include: placeInclude,
     });
+
+    broadcastSseEvent('place-created', { changed: true });
 
     res.status(201).json(newPlace);
   } catch (error) {

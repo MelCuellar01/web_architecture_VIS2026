@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { authFetch } from "../lib/authFetch";
+import { socket } from "../lib/socket";
 
 const PlacesMap = dynamic(() => import("./PlacesMap"), { ssr: false });
 
@@ -711,11 +712,36 @@ export default function TravelDiary({
     return entries.sort((a, b) => new Date(b.visitDate).getTime() - new Date(a.visitDate).getTime());
   }, [places, favoriteIds]);
 
-  const fetchPlaces = async () => {
+  const fetchPlaces = useCallback(async () => {
     const res = await authFetch(`${API_BASE}/api/places`);
     const data: Place[] = await res.json();
     setPlaces(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-  };
+  }, []);
+
+  useEffect(() => {
+    const eventSource = new EventSource(`${API_BASE}/api/events`, {
+      withCredentials: true,
+    });
+
+    const handlePlaceCreated = () => {
+      fetchPlaces();
+    };
+
+    eventSource.addEventListener('place-created', handlePlaceCreated);
+
+    return () => {
+      eventSource.removeEventListener('place-created', handlePlaceCreated);
+      eventSource.close();
+    };
+  }, [fetchPlaces]);
+
+  useEffect(() => {
+    socket.on("place-created", fetchPlaces);
+
+    return () => {
+      socket.off("place-created", fetchPlaces);
+    };
+  }, [fetchPlaces]);
 
   const goHome = useCallback(() => {
     setSelectedPlaceId(null);
@@ -747,6 +773,7 @@ export default function TravelDiary({
     });
     if (res.ok) {
       const newPlace: Place = await res.json();
+      socket.emit("place-created");
       await fetchPlaces();
       setSelectedPlaceId(newPlace.id);
       setCity("");
