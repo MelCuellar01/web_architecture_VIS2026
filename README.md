@@ -219,6 +219,7 @@ Strukturierte Daten wie Places, Entries und Trips werden in der Datenbank gespei
 
 Für größere Dateien wie Bilder wäre langfristig ein Cloud Object Store wie S3 sinnvoll, da dieser besser für Medien geeignet ist. Redis könnte zusätzlich für Caching genutzt werden, um die Performance bei häufigen Anfragen zu verbessern.
 
+
 ## Studio Session 05: Security, Authentifizierung & Autorisierung
 
 ## Lücken in API
@@ -252,4 +253,32 @@ A: Wenn jemand versuchen würde, den JWT-Payload manuell zu verändern (z. B. di
 | **A02 Cryptographic Failures** | Abgedeckt | Passwörter werden mit bcrypt (10 Saltrounds) gehasht. JWT wird als HttpOnly-Cookie gespeichert. JWT_SECRET aus `.env`. Ablaufzeit 24h. Plaintext-Passwörter werden nie zurückgegeben. | Keine Änderung erforderlich |
 | **A03 Injection** | Teilweise | DB-Queries: Prisma schützt vor SQL-Injection. Directory Traversal: `filePathFromUrl()` in `routes/entries.js` validiert nicht Dateipfade. Angreifer könnte `../` zur Dateilöschung außerhalb von `/uploads` nutzen. | Pfadvalidierung mit `path.resolve()` und Verzeichnischeck hinzugefügt (entries.js) |
 | **A07 Authentication Failures** | Teilweise | User Enumeration: Login nutzt identische Fehlermeldung. Passwort-Stärke: Keine Validierung. JWT Expiration: 24h konfiguriert. | Mindestkontrolle für 8 Zeichen bei Register hinzugefügt (auth.js) |
+
+
+## Studio-Session 06: Testing
+
+### Die Test-Pyramide
+
+| Ebene | Was testen wir bei uns? | Tool |
+|---|---|---|
+| Unit | Validierungsfunktionen für Eingaben, z. B. Pflichtfelder, Rating-Bereich, E-Mail-/Passwort-Regeln | Vitest |
+| Integration | Backend-Routen mit Prisma-Testdatenbank, z. B. POST /api/places, POST /api/entries, Login, geschützte Routen und Ownership-Checks | Vitest + Supertest |
+| E2E | Kompletter Nutzerfluss im Browser: Registrieren/Login, Ort anlegen, Diary Entry erstellen, Logout/Login, Daten weiterhin sichtbar | Cypress |
+
+### Welche zwei Dinge in eurem Projekt würden den meisten Schaden anrichten, wenn sie kaputt gehen bei einer Änderung durch den Agenten?
+
+1. Authentifizierung und Autorisierung:
+	- Login muss funktionieren.
+	- JWT-Cookie muss korrekt gesetzt und gelesen werden.
+	- Geschützte Routen dürfen ohne Login nicht erreichbar sein.
+	- Nutzer dürfen nur ihre eigenen Places, Entries, Trips und Wishlist-Daten sehen oder verändern.
+
+2. Persistenz und Entry-Erstellung:
+	- Places und Entries müssen über Prisma korrekt in der Datenbank gespeichert werden.
+	- Ein Diary Entry muss mit dem richtigen Place und dem richtigen User verbunden sein.
+	- Nach einem Backend-Neustart müssen gespeicherte Daten weiterhin vorhanden sein.
+
+
+
+
 

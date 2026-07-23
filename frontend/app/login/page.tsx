@@ -44,7 +44,7 @@ export default function LoginPage() {
     <div className="auth-page">
       <div className="auth-container">
         <h1>Login</h1>
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form onSubmit={handleSubmit} className="auth-form" data-cy="login-form">
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input 
@@ -54,6 +54,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)} 
               required 
               placeholder="your@email.com"
+              data-cy="email-input"
               disabled={loading}
             />
           </div>
@@ -66,12 +67,13 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)} 
               required 
               placeholder="Enter your password"
+              data-cy="password-input"
               disabled={loading}
             />
           </div>
           {error && <div className="auth-error">{error}</div>}
           <div className="auth-actions">
-            <button type="submit" className="btn-primary" disabled={loading}>
+            <button type="submit" className="btn-primary" disabled={loading} data-cy="login-submit">
               {loading ? 'Logging in…' : 'Login'}
             </button>
           </div>

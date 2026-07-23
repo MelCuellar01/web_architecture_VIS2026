@@ -59,7 +59,7 @@ export default function RegisterPage() {
     <div className="auth-page">
       <div className="auth-container">
         <h1>Register</h1>
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form onSubmit={handleSubmit} className="auth-form" data-cy="register-form">
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input 
@@ -69,6 +69,7 @@ export default function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)} 
               required 
               placeholder="your@email.com"
+              data-cy="email-input"
               disabled={loading}
             />
           </div>
@@ -81,12 +82,13 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)} 
               required 
               placeholder="Choose a strong password"
+              data-cy="password-input"
               disabled={loading}
             />
           </div>
           {error && <div className="auth-error">{error}</div>}
           <div className="auth-actions">
-            <button type="submit" className="btn-primary" disabled={loading}>
+            <button type="submit" className="btn-primary" disabled={loading} data-cy="register-submit">
               {loading ? 'Creating account…' : 'Register'}
             </button>
           </div>

@@ -292,7 +292,7 @@ function EntryForm({
   };
 
   return (
-    <form className="entry-form" onSubmit={handleSubmit}>
+    <form className="entry-form" onSubmit={handleSubmit} data-cy="entry-form">
       <h3>{editEntry ? "Edit Entry" : "New Entry"}</h3>
       <div className="form-row">
         <div className="form-group flex-2">
@@ -303,11 +303,12 @@ function EntryForm({
             onChange={(e) => setTitle(e.target.value)}
             required
             placeholder="e.g. Delicious dinner"
+            data-cy="entry-title-input"
           />
         </div>
         <div className="form-group flex-1">
           <label>Category</label>
-          <select value={category} onChange={(e) => setCategory(e.target.value)}>
+          <select value={category} onChange={(e) => setCategory(e.target.value)} data-cy="entry-category-input">
             {categories.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -319,7 +320,7 @@ function EntryForm({
       <div className="form-row">
         <div className="form-group flex-1">
           <label>Rating</label>
-          <select value={rating} onChange={(e) => setRating(e.target.value)}>
+          <select value={rating} onChange={(e) => setRating(e.target.value)} data-cy="entry-rating-input">
             {[5, 4, 3, 2, 1].map((r) => (
               <option key={r} value={r}>
                 {r}
@@ -353,6 +354,7 @@ function EntryForm({
           onChange={(e) => setDescription(e.target.value)}
           placeholder="What was it like?"
           rows={3}
+          data-cy="entry-description-input"
         />
       </div>
       <div className="form-group">
@@ -412,7 +414,7 @@ function EntryForm({
             Cancel
           </button>
         )}
-        <button type="submit" disabled={submitting} className="btn-primary">
+        <button type="submit" disabled={submitting} className="btn-primary" data-cy="entry-submit">
           {submitting ? "Saving…" : editEntry ? "Update Entry" : "Save Entry"}
         </button>
       </div>
@@ -1084,13 +1086,14 @@ export default function TravelDiary({
 
         <div className="sidebar-bottom">
           {isAddingPlace ? (
-            <form onSubmit={handleAddPlace} className="add-place-form">
+            <form onSubmit={handleAddPlace} className="add-place-form" data-cy="place-form">
               <input
                 type="text"
                 placeholder="City"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 required
+                data-cy="city-input"
               />
               <input
                 type="text"
@@ -1098,12 +1101,13 @@ export default function TravelDiary({
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 required
+                data-cy="country-input"
               />
               <div className="form-actions">
                 <button type="button" className="btn-secondary" onClick={() => setIsAddingPlace(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
+                <button type="submit" className="btn-primary" data-cy="place-submit">
                   Save
                 </button>
               </div>
@@ -1112,6 +1116,7 @@ export default function TravelDiary({
             <button
               className="btn-add-place"
               onClick={() => setIsAddingPlace(true)}
+              data-cy="add-place-button"
             >
               + Add New Place
             </button>
@@ -1151,6 +1156,7 @@ export default function TravelDiary({
                 setShowEntryForm(!showEntryForm);
                 setEditingEntry(null);
               }}
+              data-cy="add-entry-button"
             >
               {showEntryForm ? "Cancel" : "Add Entry"}
             </button>
@@ -1158,6 +1164,7 @@ export default function TravelDiary({
           <div ref={avatarRef} style={{ marginLeft: "auto", position: "relative" }}>
             <button
               className="avatar-btn"
+              data-cy="avatar-button"
               onClick={() => setMenuOpen((v) => !v)}
               aria-haspopup="true"
               aria-expanded={menuOpen}
@@ -1209,6 +1216,7 @@ export default function TravelDiary({
                     border: "none",
                     cursor: "pointer",
                   }}
+                  data-cy="logout-button"
                 >
                   Logout
                 </button>
@@ -1627,7 +1635,7 @@ export default function TravelDiary({
                   <p>{isSearching ? "No entries match your search and filters." : `No entries for ${selectedPlace.city} yet. Add your first memory!`}</p>
                 </div>
               ) : (
-                <div className="entries-grid">
+                <div className="entries-grid" data-cy="entry-list">
                   {filteredSortedEntries.map((entry) => {
                     const urls = getImageUrls(entry);
                     return (
