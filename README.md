@@ -257,7 +257,7 @@ A: Wenn jemand versuchen würde, den JWT-Payload manuell zu verändern (z. B. di
 
 ## Studio-Session 06: Testing
 
-### Die Test-Pyramide
+## Die Test-Pyramide
 
 | Ebene | Was testen wir bei uns? | Tool |
 |---|---|---|
@@ -280,41 +280,41 @@ A: Wenn jemand versuchen würde, den JWT-Payload manuell zu verändern (z. B. di
 
 ## Studio Session 07: Real-time Web
 
-### Echtzeit-Bedarfs
+## Echtzeit-Bedarfs
 
 In WanderNotes: My Diary App können sich Daten wie Reisen, Orte und Tagebucheinträge ändern, während ein anderer Browser-Tab oder ein anderes Gerät geöffnet ist. Da die App aktuell als persönliches Reisetagebuch genutzt wird und keine gemeinsame Bearbeitung unterstützt, reicht ein Neuladen der Seite grundsätzlich aus. Echtzeit-Updates verbessern jedoch die Benutzererfahrung, wenn dieselbe Person die App in mehreren Tabs oder auf mehreren Geräten verwendet.
 
 Für dieses Web-app ist eine einseitige Kommunikation vom Server zum Client ausreichend. Der Server muss die verbundenen Clients nur darüber informieren, dass neue Daten verfügbar sind, damit diese ihre Listen aktualisieren können. Da WanderNotes nur wenige gleichzeitige Nutzer erwartet, ist Server-Sent Events (SSE) die passendere Lösung. WebSockets wären erst bei Funktionen wie Chat, gemeinsamer Bearbeitung oder anderen interaktiven Echtzeit-Anwendungen sinnvoll.
 
-### Zwei Prompt-Iterationen für die SSE-Implementierung
+## Zwei Prompt-Iterationen für die SSE-Implementierung
 
-#### Prompt 1
+### Prompt 1
 
 Im ersten Prompt sollte der Agent das Projekt analysieren und entscheiden, welche Ressource sich am besten für Server-Sent Events eignet. Außerdem sollte er die betroffenen Dateien, den Ablauf der Kommunikation sowie mögliche Probleme mit Authentifizierung und CORS nennen. Noch sollten keine Dateien geändert werden.
 
-#### Prompt 2
+### Prompt 2
 
 Im zweiten Prompt wurde die Aufgabe genauer beschrieben. Der Agent sollte die SSE-Funktion nur für Orte umsetzen, den vorhandenen Backend-Port verwenden, den Endpunkt mit der bestehenden Authentifizierung schützen und ein Event mit dem Namen `place-created` senden. Zusätzlich wurde festgelegt, dass keine privaten Ortsdaten übertragen werden, der `EventSource` im Frontend geschlossen wird und keine anderen Funktionen verändert werden.
 
-#### Was wurde im zweiten Prompt verbessert?
+### Was wurde im zweiten Prompt verbessert?
 
 Der zweite Prompt war genauer und hat mögliche Fehler aus dem ersten Entwurf verhindert. Besonders wichtig waren die richtige Backend-URL, die Nutzung des HttpOnly-Cookies, der genaue Event-Name, das Schließen der Verbindung und die Begrenzung auf kleine Änderungen. Dadurch konnte der Agent die Funktion gezielter und sicherer umsetzen.
 
-### Zwei Prompt-Iterationen für die Socket.IO-Implementierung
+## Zwei Prompt-Iterationen für die Socket.IO-Implementierung
 
-#### Prompt 1
+### Prompt 1
 
 Im ersten Prompt sollte der Agent die Socket.IO-Funktion für WanderNotes umsetzen. Dabei sollten eine Verbindung zwischen Backend und Frontend hergestellt, Ereignisse für neue Orte übertragen und die bestehende REST-API weiterhin für das Erstellen von Orten verwendet werden.
 
-#### Prompt 2
+### Prompt 2
 
 Im zweiten Prompt wurde die Aufgabe genauer beschrieben. Es wurde festgelegt, dass nur die notwendigen Änderungen vorgenommen werden sollen, die bestehenden SSE-Funktionen erhalten bleiben und nur die benötigten Pakete (`socket.io` und `socket.io-client`) installiert werden. Außerdem wurde beschrieben, wie das Event `place-created` zwischen den Browser-Tabs übertragen werden soll.
 
-#### Was wurde im zweiten Prompt verbessert?
+### Was wurde im zweiten Prompt verbessert?
 
 Der zweite Prompt war präziser und hat den Umfang der Änderungen klar eingeschränkt. Dadurch wurden unnötige Änderungen vermieden und die neue Socket.IO-Funktion sauber in die bestehende Architektur integriert, ohne die bereits funktionierende SSE-Implementierung zu verändern.
 
-### Vergleich: Server-Sent Events vs. WebSockets
+## Vergleich: Server-Sent Events vs. WebSockets
 
 | Kriterium | SSE | WebSockets |
 |-----------|-----|------------|
@@ -324,13 +324,15 @@ Der zweite Prompt war präziser und hat den Umfang der Änderungen klar eingesch
 | **Geeignet für WanderNotes?** | ✅ Ja | ✅ Ja |
 | **Warum?** | Reicht aus, um andere Clients über neue Orte zu informieren. | Ermöglicht bidirektionale Kommunikation, ist für die aktuelle Version der App aber eigentlich nicht notwendig. |
 
-#### Verhalten bei einem Server-Neustart
+### Verhalten bei einem Server-Neustart
 
 Wenn der Server neu gestartet wird, wird die Verbindung zunächst unterbrochen. Während dieser Zeit werden keine Echtzeit-Nachrichten übertragen. Nach dem Neustart stellen sowohl Server-Sent Events als auch Socket.IO die Verbindung automatisch wieder her und die App kann wieder neue Ereignisse empfangen.
 
-### Den Agenten als Architekt einsetzen
+## Den Agenten als Architekt einsetzen
 
 Der Agent empfiehlt, Echtzeit-Kommunikation nur für die Ortsliste zu verwenden, damit mehrere geöffnete Browser-Tabs automatisch synchron bleiben. Für Reisen, Tagebucheinträge und die Bucket List reicht in der aktuellen Version der App ein normales Neuladen der Daten oder einfaches Polling aus, da diese Funktionen keine sofortige Aktualisierung benötigen. Außerdem passt dieser Ansatz gut zur bestehenden REST-Architektur und vermeidet unnötige Komplexität. Ich stimme dieser Einschätzung zu, da WanderNotes aktuell hauptsächlich von einer Person genutzt wird und Echtzeit-Kommunikation nur an wenigen Stellen einen echten Mehrwert bietet.
+
+## Studio Session 08: 
 
 
 

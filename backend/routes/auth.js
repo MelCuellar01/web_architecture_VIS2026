@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import { sendRegistrationConfirmationEmail } from '../services/sendRegistrationConfirmationEmail.js';
 
 const prisma = new PrismaClient();
 const router = express.Router();
@@ -18,6 +19,10 @@ router.post('/register', async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({ data: { email, password: hashed } });
+
+    void sendRegistrationConfirmationEmail({ to: user.email }).catch((error) => {
+      console.error('Failed to send registration confirmation email:', error);
+    });
 
     return res.status(201).json({ id: user.id, email: user.email, createdAt: user.createdAt });
   } catch (err) {
