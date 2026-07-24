@@ -332,7 +332,196 @@ Wenn der Server neu gestartet wird, wird die Verbindung zunächst unterbrochen. 
 
 Der Agent empfiehlt, Echtzeit-Kommunikation nur für die Ortsliste zu verwenden, damit mehrere geöffnete Browser-Tabs automatisch synchron bleiben. Für Reisen, Tagebucheinträge und die Bucket List reicht in der aktuellen Version der App ein normales Neuladen der Daten oder einfaches Polling aus, da diese Funktionen keine sofortige Aktualisierung benötigen. Außerdem passt dieser Ansatz gut zur bestehenden REST-Architektur und vermeidet unnötige Komplexität. Ich stimme dieser Einschätzung zu, da WanderNotes aktuell hauptsächlich von einer Person genutzt wird und Echtzeit-Kommunikation nur an wenigen Stellen einen echten Mehrwert bietet.
 
-## Studio Session 08: 
+## Study Session 08: Async Messaging
+
+### Analyse des Benachrichtigungsbedarfs
+
+| Event in WanderNotes | Benachrichtigung sinnvoll? | Typ | Kanal | Begründung |
+|---|---|---|---|---|
+| Erfolgreiche Registrierung | Ja | Transactional | E-Mail | Der Nutzer erhält eine Bestätigung, dass das Konto erfolgreich erstellt wurde. Die Nachricht kann auch einen direkten Link zur Anmeldung enthalten. |
+| Monatliche Erinnerung an Bucket-List-Einträge | Ja, optional | Product | E-Mail | Die Nachricht erinnert den Nutzer an gespeicherte Reiseziele, die noch nicht besucht wurden. Da die Erinnerung nicht dringend ist, reicht eine E-Mail aus. |
+| Erinnerung an eine Reise vor einem Jahr | Ja, optional | Product | E-Mail | Der Nutzer kann am gleichen Datum an eine frühere Reise erinnert werden, zum Beispiel an einen Besuch in Madrid vor einem Jahr. Die E-Mail könnte einen Link zum passenden Tagebucheintrag enthalten. |
+| Neuer Ort oder Tagebucheintrag wurde erstellt | Nein | – | Keiner | Der Nutzer erstellt diese Inhalte selbst und sieht das Ergebnis sofort in der App. Eine zusätzliche Nachricht wäre nicht notwendig. |
+| Passwort wurde geändert | Später sinnvoll | Transactional | E-Mail | Eine Sicherheitsnachricht wäre sinnvoll, damit der Nutzer eine nicht selbst ausgeführte Änderung schnell erkennen kann. Diese Funktion wird aktuell nicht umgesetzt, da WanderNotes noch keine Passwortänderung oder Passwort-Zurücksetzung besitzt. |
+
+
+**Muss der Nutzer bei einem Event sofort reagieren?**
+
+Nein. Die geplanten Benachrichtigungen sind nicht dringend und können später gelesen werden. Deshalb ist E-Mail für WanderNotes geeigneter als Web Push.
+
+**Ist Marketing-Content geplant?**
+
+Aktuell ist kein klassischer Marketing-Content geplant. Die monatliche Bucket-List-Erinnerung und die Reise-Erinnerung wären freiwillige Produktnachrichten. Der Nutzer sollte diese Nachrichten aktiv einschalten oder wieder deaktivieren können.
+
+**Wie viele Events würden pro Stunde Benachrichtigungen auslösen?**
+
+Es würden nur wenige Benachrichtigungen entstehen. Die Registrierungs-E-Mail wird nur einmal pro neuem Nutzer gesendet. Die anderen Erinnerungen würden höchstens einmal im Monat oder an einem bestimmten Jahrestag versendet.
+
+### Entscheidung
+
+Für die praktische Umsetzung wir eine transaktionale E-Mail nach der erfolgreichen Registrierung verwendet. Diese Funktion passt bereits zur aktuellen Struktur von WanderNotes und benötigt keine neue Passwortverwaltung. Die monatliche Bucket-List-Erinnerung und die Erinnerung an frühere Reisen sind sinnvolle Ideen für eine spätere Erweiterung, benötigen aber zusätzlich eine geplante Hintergrundaufgabe. Web Push wird nicht umgesetzt, da aktuell keine Benachrichtigung eine sofortige Reaktion verlangt.
+
+## Transactionale Registrierungs-E-Mail
+
+Für WanderNotes wurde eine transaktionale E-Mail nach einer erfolgreichen Registrierung umgesetzt. Die E-Mail bestätigt, dass das Benutzerkonto erstellt wurde, und enthält einen direkten Link zur Login-Seite von WanderNotes.
+
+### Prompt-Iteration 1
+
+Im ersten Prompt wurde der Agent gebeten, eine Registrierungs-E-Mail mit Resend und React Email zu planen. Das Template sollte eine Bestätigung und einen direkten Link zur Login-Seite enthalten. Außerdem sollte der Versand den HTTP-Request nicht blockieren.
+
+Der erste Plan enthielt jedoch zwei Annahmen: Der Agent plante eine JSX-Datei im Backend und nahm zunächst an, dass die Route `/login` existiert.
+
+### Prompt-Iteration 2
+
+Im zweiten Prompt wurde präzisiert, dass der Agent zuerst die echte Login-Route prüfen soll. Außerdem sollte kein JSX und kein neues Build-System eingeführt werden. Stattdessen sollte das E-Mail-Template als normale `.js`-Datei mit `React.createElement` umgesetzt werden.
+
+### Testergebnis
+
+Die Registrierung wurde erfolgreich abgeschlossen, obwohl der E-Mail-Versand bei einigen Tests nicht zugestellt werden konnte. Resend akzeptiert die Anfrage für die hinterlegte Testadresse, aber der E-Mail-Provider der Hochschule meldet einen temporären Bounce. Beim Test mit einer anderen Adresse blockierte Resend den Versand wegen der Einschränkungen des Test-Absenders.
+
+Wichtig ist, dass die Registrierung in beiden Fällen erfolgreich geblieben ist. Damit wurde bestätigt, dass der E-Mail-Versand den HTTP-Request nicht blockiert und Fehler korrekt behandelt werden.
+
+### Bewertung und Verbesserung des E-Mail-Templates
+
+Das E-Mail-Template wurde anhand der vorgegebenen Kriterien überprüft.
+
+| Kriterium | Bewertung |
+|---|---|
+| Sind alle wichtigen Informationen enthalten? | Ja. Die E-Mail informiert den Nutzer darüber, dass die Registrierung erfolgreich abgeschlossen wurde. |
+| Enthält die E-Mail einen direkten Link? | Ja. Ein Button führt direkt zur Login-Seite von WanderNotes. Zusätzlich wird der Link als Text angezeigt, falls der Button nicht funktioniert. |
+| Sind Titel und Inhalt kurz und verständlich? | Ja. Die Nachricht konzentriert sich auf die erfolgreiche Registrierung und enthält keine unnötigen Informationen. |
+| Ist die nächste Aktion für den Nutzer klar? | Ja. Der Nutzer wird über den Button dazu aufgefordert, sich bei WanderNotes anzumelden. |
+
+Bei der ersten Version lautete der Betreff:
+
+`Welcome to WanderNotes - confirm your registration`
+
+Dieser Betreff war nicht vollständig passend, weil der Nutzer seine E-Mail-Adresse nicht bestätigen muss. Das Konto wurde bereits erfolgreich erstellt. Deshalb wurde der Betreff geändert zu:
+
+`Welcome to WanderNotes - Registration successful`
+
+Durch diese Änderung beschreibt der Betreff den tatsächlichen Inhalt der Nachricht genauer. Weitere Änderungen am Template waren nicht notwendig, da bereits eine klare Bestätigung, ein direkter Login-Link und ein kurzer verständlicher Text vorhanden waren.
+
+## Session 09: Modularer Monolith
+
+## Analyse der bestehenden Backend-Struktur
+
+| Datei | Verantwortlichkeit | Zugriff auf andere Bereiche |
+|-------|--------------------|-----------------------------|
+| `routes/auth.js` | Registrierung, Login, Logout sowie Prüfung des aktuell angemeldeten Benutzers. Zusätzlich werden Passwörter gehasht, JWTs erstellt bzw. geprüft und Bestätigungs-E-Mails ausgelöst. | Kein direkter Zugriff auf andere Datenmodelle. Es wird jedoch der separate E-Mail-Service aufgerufen. |
+| `routes/entries.js` | Verwaltung der Tagebucheinträge einschließlich Erstellen, Bearbeiten, Löschen sowie Bildverwaltung und Datei-Uploads. | Ja. Es wird direkt auf das `Place`-Modell zugegriffen, um Orte und deren Besitzer zu prüfen. |
+| `routes/places.js` | Verwaltung der besuchten Orte sowie Erstellung und Löschung von Orten. Beim Löschen werden außerdem zugehörige Bilder entfernt und nach dem Erstellen ein SSE-Ereignis ausgelöst. | Ja. Die Datei greift direkt auf Einträge und deren Bilder zu. |
+| `routes/trips.js` | Verwaltung von Reisen, Reiseeinträgen und Reiseelementen. Die Daten werden in einer JSON-Datei gespeichert. | Ja. Beim Hinzufügen eines Eintrags wird direkt auf das `Entry`-Modell zugegriffen. |
+| `routes/wishlist.js` | Verwaltung der Reisewunschliste mit Erstellen, Bearbeiten und Löschen von Wunschzielen. Die Daten werden in einer JSON-Datei gespeichert. | Nein. Die Datei verwendet ausschließlich ihre eigene Datenquelle. |
+| `server.js` | Zentraler Einstiegspunkt des Backends. Hier werden Express, Middleware, Authentifizierung, Router, SSE, Socket.IO sowie der Server konfiguriert. | Nein. Die Datei verbindet lediglich die einzelnen Module miteinander. |
+
+## Ergebnisse der Code-Analyse
+
+- `auth.js:11`, `auth.js:35` und `auth.js:90` enthalten fachliche Logik für Registrierung, Login und Session-Prüfung: Pflichtfeldprüfung, Passwort-Hashing, JWT-Erzeugung, Cookie-Handling und E-Mail-Versand.
+
+- `entries.js:115`, `entries.js:176`, `entries.js:266`, `entries.js:298` und `entries.js:331` bündeln neben Routing auch Validierung, Platzprüfung, Bild- und Dateiverwaltung sowie die Erzeugung, Aktualisierung und Löschung von Einträgen.
+
+- `places.js:61` und `places.js:91` enthalten fachliche Logik für das Anlegen und Löschen von Orten inklusive SSE-Broadcast und Dateilöschung.
+
+- `trips.js:36`, `trips.js:58`, `trips.js:101`, `trips.js:111` und `trips.js:135` mischen Routing mit Geschäftsregeln für die JSON-basierte Trip-Verwaltung, Entry-Verknüpfung und Item-Zustände.
+
+- `wishlist.js:32`, `wishlist.js:55` und `wishlist.js:71` mischen Routing mit JSON-Persistenz, Status-Normalisierung und Benutzerfilterung.
+
+- `entries.js:128`, `entries.js:201` und `entries.js:308` greifen direkt auf `prisma.place` zu, um Einträge gegen die Places-Domäne zu prüfen.
+
+- `places.js:96` lädt beim Löschen eines Ortes auch `entries` und `entryImages`. Dadurch ist die Places-Route direkt an Eintrags- und Bilddaten gekoppelt.
+
+- `trips.js:68` prüft Trip-Verknüpfungen mit `prisma.entry` und hängt damit direkt an der Entries-Domäne.
+
+- `auth.js:23` ist zusätzlich an die Mail-Service-Logik für Registrierungsbestätigungen gekoppelt.
+
+- Wiederholte Logik taucht in mehreren Routen auf:
+  - `asyncHandler` in `entries.js:26`, `places.js:15`, `trips.js:14` und `wishlist.js:11`
+  - `isMissing` in `entries.js:30` und `places.js:19`
+  - Datei-Löschlogik in `entries.js:44` und `places.js:21`
+  - JSON lesen, schreiben und nach `userId` filtern in `trips.js:18` und `wishlist.js:15`
+  - Status-Whitelists in `trips.js:119` und `wishlist.js:38`
+
+  ## Identifizierte Bounded Contexts
+
+Auf Grundlage der bestehenden Routen und ihrer fachlichen Verantwortlichkeiten wurden vier Bounded Contexts identifiziert:
+
+1. **Authentication**
+
+   Dieser Bereich umfasst die Registrierung, den Login, den Logout, die Passwortverarbeitung, JWTs, Cookies und den Versand der Registrierungsbestätigung.
+
+   Zugehörige bestehende Datei:
+
+   - `routes/auth.js`
+
+2. **Travel Journal**
+
+   Dieser Bereich umfasst besuchte Orte, Tagebucheinträge und die zugehörigen Bilder. Orte und Einträge gehören fachlich eng zusammen, da jeder Eintrag einem Ort zugeordnet ist. Beim Löschen eines Ortes müssen außerdem die zugehörigen Einträge und Bilder berücksichtigt werden.
+
+   Zugehörige bestehende Dateien:
+
+   - `routes/places.js`
+   - `routes/entries.js`
+
+3. **Trip Planning**
+
+   Dieser Bereich verwaltet Reisen, die Verknüpfung von Tagebucheinträgen mit Reisen sowie einzelne Reiseelemente.
+
+   Zugehörige bestehende Datei:
+
+   - `routes/trips.js`
+
+4. **Wishlist**
+
+   Dieser Bereich verwaltet unabhängige Wunschziele mit Ort, Land, Status und Notiz.
+
+   Zugehörige bestehende Datei:
+
+   - `routes/wishlist.js`
+
+### Kommunikation zwischen den Bounded Contexts
+
+Der **Authentication**-Kontext stellt den übrigen Bereichen die Identität des angemeldeten Benutzers (`userId`) zur Verfügung, damit diese ausschließlich auf die eigenen Daten zugreifen können. Der **Trip Planning**-Kontext kommuniziert mit dem **Travel Journal**-Kontext, um das Vorhandensein und den Besitzer eines Tagebucheintrags (`entryId`, `placeId`, `userId`) zu prüfen, während der **Wishlist**-Kontext derzeit unabhängig von den übrigen Bereichen arbeitet.
+
+### Service Layer
+
+#### Prompt-Iteration 1
+
+Refaktoriere ausschließlich den `POST /places`-Handler. Verschiebe die Validierung, den Prisma-Create-Aufruf sowie den SSE-Broadcast in eine neue Service-Funktion `createPlace(data, userId)`. Der Route-Handler soll nur noch die Anfrage entgegennehmen, den Service aufrufen und die HTTP-Antwort zurückgeben. Andere Handler dürfen nicht verändert werden.
+
+#### Prompt-Iteration 2
+
+Refaktoriere ausschließlich den `createEntryHandler`. Erstelle dafür eine Service-Funktion `createEntry(data, files, userId, routePlaceId)` und verschiebe die Validierung, die Prüfung des zugehörigen Ortes, die Bildverarbeitung sowie die Prisma-Logik in den Service. Die bestehenden Endpunkte, die Middleware sowie die HTTP-Antworten sollen unverändert bleiben.
+
+#### Verbesserung der zweiten Iteration
+
+Der zweite Prompt war präziser formuliert, da die auszulagernde Geschäftslogik sowie die unveränderten Bestandteile der Route (Endpunkte, Middleware und HTTP-Antworten) eindeutig beschrieben wurden. Dadurch konnte die Service-Struktur gezielter umgesetzt werden.
+
+### Modul-Schnittstellen
+
+#### travel-journal/entries.service.js
+
+**Öffentlich:**
+- createEntry()
+
+**Intern:**
+- parseList()
+- createServiceError()
+
+#### travel-journal/places.service.js
+
+**Öffentlich:**
+- createPlace()
+
+**Intern:**
+- keine
+
+### Vorbereitung auf eine mögliche Microservice-Architektur
+
+Das Wishlist-Modul wäre am einfachsten als eigenständiger Microservice auszulagern, da es derzeit stark isoliert ist und keine Abhängigkeiten zu den anderen fachlichen Modulen besitzt. Es verwendet nur seine eigene JSON-Persistenz, während beispielsweise das Trip-Planning-Modul bereits auf Daten aus dem Travel-Journal angewiesen ist.
+
+
+
 
 
 

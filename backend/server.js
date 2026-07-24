@@ -7,11 +7,11 @@ import { createServer } from 'http';
 import { fileURLToPath } from 'url';
 import { Server } from 'socket.io';
 
-import entriesRouter from './routes/entries.js';
-import placesRouter from './routes/places.js';
-import tripsRouter from './routes/trips.js';
-import wishlistRouter from './routes/wishlist.js';
-import authRouter from './routes/auth.js';
+import entriesRouter from './modules/travel-journal/entries.routes.js';
+import placesRouter from './modules/travel-journal/places.routes.js';
+import tripsRouter from './modules/trip-planning/trips.routes.js';
+import wishlistRouter from './modules/wishlist/wishlist.routes.js';
+import authRouter from './modules/auth/auth.routes.js';
 import authenticate from './middleware/authenticate.js';
 import cookieParser from 'cookie-parser';
 import { addSseClient, removeSseClient } from './utils/sse.js';

@@ -3,8 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
-import authenticate from '../middleware/authenticate.js';
-import { broadcastSseEvent } from '../utils/sse.js';
+import authenticate from '../../middleware/authenticate.js';
+import { createPlace } from './places.service.js';
 
 const router = express.Router();
 
@@ -16,9 +16,7 @@ const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-const isMissing = (value) => value === undefined || value === null || String(value).trim() === '';
-
-const filePathFromUrl = (url) => path.join(__dirname, '..', 'public', url.replace(/^\/+/, ''));
+const filePathFromUrl = (url) => path.join(__dirname, '..', '..', 'public', url.replace(/^\/+/, ''));
 
 const deleteFiles = (urls) => {
   for (const url of urls) {
@@ -60,26 +58,16 @@ router.get('/places', asyncHandler(async (req, res) => {
 
 router.post('/places', asyncHandler(async (req, res) => {
   try {
-    const { city, country } = req.body;
     const userId = req.user.userId;
 
-    if (isMissing(city) || isMissing(country)) {
-      return res.status(400).json({ error: 'City and country are required' });
-    }
-
-    const newPlace = await prisma.place.create({
-      data: {
-        city,
-        country,
-        userId,
-      },
-      include: placeInclude,
-    });
-
-    broadcastSseEvent('place-created', { changed: true });
+    const newPlace = await createPlace(req.body, userId);
 
     res.status(201).json(newPlace);
   } catch (error) {
+    if (error?.statusCode === 400) {
+      return res.status(400).json({ error: error.message });
+    }
+
     console.error('Failed to create place:', error);
     res.status(500).json({
       error: 'Failed to create place in database',

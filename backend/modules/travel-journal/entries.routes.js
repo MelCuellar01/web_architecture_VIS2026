@@ -4,13 +4,14 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
+import { createEntry } from './entries.service.js';
 
 const router = express.Router();
 
 const prisma = new PrismaClient();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const uploadsDir = path.join(__dirname, '..', 'public', 'uploads');
+const uploadsDir = path.join(__dirname, '..', '..', 'public', 'uploads');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -42,7 +43,7 @@ const parseList = (value) => {
 };
 
 const filePathFromUrl = (url) => {
-  const baseDir = path.join(__dirname, '..', 'public', 'uploads');
+  const baseDir = path.join(__dirname, '..', '..', 'public', 'uploads');
   const filePath = path.resolve(baseDir, url.replace(/^\/+/, ''));
   // Ensure resolved path is within uploads directory to prevent directory traversal
   if (!filePath.startsWith(baseDir)) {
@@ -114,54 +115,14 @@ router.get('/entries/:id', asyncHandler(async (req, res) => {
 
 const createEntryHandler = asyncHandler(async (req, res) => {
   try {
-    const userId = req.user.userId;
-    const placeId = req.params.placeId || req.body.placeId;
-    const { title, description, rating, category, visitDate } = req.body;
+    const newEntry = await createEntry(req.body, req.files, req.user.userId, req.params.placeId);
 
-    if (isMissing(placeId)) {
-      return res.status(400).json({ error: 'placeId is required' });
-    }
-    if (isMissing(title) || isMissing(description) || isMissing(rating) || isMissing(category)) {
-      return res.status(400).json({ error: 'title, description, rating and category are required' });
-    }
-
-    const place = await prisma.place.findFirst({
-      where: { id: placeId, userId },
-    });
-
-    if (!place) {
-      return res.status(404).json({ error: `Place not found with ID: ${placeId}` });
-    }
-
-    const imageUrls = [
-      ...parseList(req.body.imageUrls),
-      ...parseList(req.body.existingImages),
-      ...(req.files || []).map((file) => `/uploads/${file.filename}`),
-    ];
-
-    const data = {
-      placeId,
-      userId,
-      title,
-      description,
-      rating: Number(rating),
-      category,
-      visitDate: visitDate ? new Date(visitDate) : new Date(),
-    };
-
-    if (imageUrls.length > 0) {
-      data.images = {
-        create: [...new Set(imageUrls)].map((imageUrl) => ({ imageUrl })),
-      };
-    }
-
-    const newEntry = await prisma.entry.create({
-      data,
-      include: entryInclude,
-    });
-
-    res.status(201).json(newEntry);
+    return res.status(201).json(newEntry);
   } catch (error) {
+    if (error?.statusCode === 400 || error?.statusCode === 404) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+
     console.error('Failed to create entry:', error);
     res.status(500).json({
       error: 'Failed to create entry in database',

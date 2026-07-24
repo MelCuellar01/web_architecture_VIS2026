@@ -2,7 +2,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
-import { sendRegistrationConfirmationEmail } from '../services/sendRegistrationConfirmationEmail.js';
+import { sendRegistrationConfirmationEmail } from '../../services/sendRegistrationConfirmationEmail.js';
 
 const prisma = new PrismaClient();
 const router = express.Router();
