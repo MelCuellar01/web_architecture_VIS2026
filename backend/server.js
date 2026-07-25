@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import cors from 'cors';
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
@@ -37,10 +36,6 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-app.use(cors({
-  origin: 'http://localhost:3001',
-  credentials: true
-}));
 app.use(cookieParser());
 app.use(express.json());
 

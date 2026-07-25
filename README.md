@@ -520,7 +520,69 @@ Der zweite Prompt war präziser formuliert, da die auszulagernde Geschäftslogik
 
 Das Wishlist-Modul wäre am einfachsten als eigenständiger Microservice auszulagern, da es derzeit stark isoliert ist und keine Abhängigkeiten zu den anderen fachlichen Modulen besitzt. Es verwendet nur seine eigene JSON-Persistenz, während beispielsweise das Trip-Planning-Modul bereits auf Daten aus dem Travel-Journal angewiesen ist.
 
+## Session 10: Deployment auf Hetzner Webhosting
 
+## Überblick
+
+Nach der Fertigstellung der Anwendung wurden Frontend und Backend zu einer gemeinsamen Node.js-Anwendung zusammengeführt. Das statische Frontend wird von Express ausgeliefert, während die API unter dem Pfad `/api` erreichbar ist.
+
+| Bestandteil | Läuft als | Hostname / Pfad | Wird ausgeliefert von |
+|-------------|-----------|-----------------|-----------------------|
+| Frontend (Next.js Static Export) | Statisches Build | `https://<wandernotes-mytraveldiary.de>` | Express (`express.static`) |
+| Backend (Express) | Node.js-Anwendung | `https://<wandernotes-mytraveldiary.de>/api` | Node.js |
+| Datenbank (MySQL) | MySQL-Datenbank | Server (intern) | MySQL |
+
+Der entscheidende Unterschied zur getrennten Entwicklungsumgebung besteht darin, dass Frontend und Backend unter derselben Domain laufen. Die API befindet sich lediglich unter dem Pfad `/api` und nicht auf einer eigenen Subdomain.
+
+## Deployment auf Hetzner
+
+Für das Deployment wurde die Anwendung als einzelne Node.js-Anwendung auf Hetzner Webhosting eingerichtet.
+
+Dabei wurden folgende Schritte umgesetzt:
+
+- Export des Next.js-Frontends als statische Dateien.
+- Bereitstellung des Frontends über `backend/public`.
+- Auslieferung der statischen Dateien über `express.static`.
+- Bereitstellung der REST-API unter `/api`.
+- Verwendung einer MySQL-Datenbank mit Prisma.
+- Konfiguration der Umgebungsvariablen (`DATABASE_URL`, `JWT_SECRET`, `RESEND_API_KEY` und `NODE_ENV=production`) im Hosting-Panel. Die Werte werden nicht im Quellcode gespeichert, sondern über `process.env` eingelesen.
+- Deployment der Prisma-Migrationen auf dem Server.
+
+## Warum entfällt CORS?
+
+Im Produktivsystem werden Frontend und Backend über dieselbe Domain ausgeliefert. Dadurch handelt es sich um **Same-Origin-Requests**, weshalb die Express-CORS-Middleware nicht mehr benötigt wird.
+
+Alle API-Aufrufe erfolgen über den Pfad `/api`, sodass keine Kommunikation zwischen unterschiedlichen Domains oder Ports stattfindet.
+
+Die CORS-Konfiguration von Socket.IO wurde beibehalten, da sie weiterhin für die lokale Entwicklungsumgebung benötigt wird. Dort laufen Frontend und Backend auf unterschiedlichen Ports (`localhost:3001` bzw. `localhost:3000`).
+
+## Cookie-Konfiguration
+
+Für die Authentifizierung wird ein JWT in einem HttpOnly-Cookie gespeichert.
+
+Verwendete Einstellungen:
+
+- `httpOnly: true`
+- `sameSite: "lax"`
+- `secure: process.env.NODE_ENV === "production"`
+
+Die Einstellung **SameSite=Lax** ist ausreichend, da Frontend und Backend unter derselben Domain betrieben werden. Dadurch werden die Cookies automatisch bei normalen Navigations- und API-Anfragen übertragen, ohne die weniger sichere Einstellung `SameSite=None` verwenden zu müssen.
+
+Das Attribut `Secure` wird ausschließlich im Produktivbetrieb aktiviert, sodass Cookies nur über HTTPS übertragen werden.
+
+## Besonderheiten bei der Umsetzung mit Next.js
+
+Die Vorlesung verwendet als Beispiel ein Vite-Projekt. Diese Anwendung wurde jedoch mit **Next.js** entwickelt.
+
+Dadurch mussten einige Schritte an die bestehende Projektstruktur angepasst werden:
+
+- Das Frontend wurde als **Next.js Static Export** erstellt.
+- Die exportierten Dateien werden in `backend/public` abgelegt.
+- Express übernimmt sowohl die Auslieferung des Frontends als auch der REST-API.
+- Die API bleibt unter dem Pfad `/api` erreichbar.
+- Die Socket.IO-CORS-Konfiguration wurde bewusst beibehalten, da sie ausschließlich für die lokale Entwicklungsumgebung mit unterschiedlichen Ports benötigt wird.
+
+Durch diese Anpassungen konnte dieselbe Zielarchitektur wie in der Vorlesung umgesetzt werden, obwohl ein anderes Frontend-Framework verwendet wurde.
 
 
 
