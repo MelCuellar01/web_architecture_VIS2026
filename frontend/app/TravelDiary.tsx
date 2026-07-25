@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { authFetch } from "../lib/authFetch";
+import { apiUrl } from "../lib/apiConfig";
 import { socket } from "../lib/socket";
 
 const PlacesMap = dynamic(() => import("./PlacesMap"), { ssr: false });
@@ -58,8 +59,6 @@ interface WishlistItem {
   createdAt: string;
 }
 
-const API_BASE = "http://localhost:3000";
-
 function badgeClass(category: string) {
   const map: Record<string, string> = {
     Restaurant: "cat-restaurant",
@@ -86,7 +85,7 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 /** Collect and normalize image URLs from multiple possible shapes (images/imageUrls/imageUrl).
- * Returns absolute URLs when possible (prefixes `/uploads` with `API_BASE`).
+ * Returns absolute URLs when possible (prefixes `/uploads` with `apiUrl`).
  */
 function getImageUrls(entry: any): string[] {
   const candidates: string[] = [];
@@ -102,7 +101,7 @@ function getImageUrls(entry: any): string[] {
     .filter(Boolean)
     .map((u) => {
       if (u.startsWith("http://") || u.startsWith("https://")) return u;
-      if (u.startsWith("/uploads")) return `${API_BASE}${u}`;
+      if (u.startsWith("/uploads")) return `${apiUrl(u)}`;
       return u;
     });
 }
@@ -279,8 +278,8 @@ function EntryForm({
     }
 
     const url = editEntry
-      ? `${API_BASE}/api/places/${encodeURIComponent(placeId)}/entries/${encodeURIComponent(editEntry.id)}`
-      : `${API_BASE}/api/places/${encodeURIComponent(placeId)}/entries`;
+        ? apiUrl(`/api/places/${encodeURIComponent(placeId)}/entries/${encodeURIComponent(editEntry.id)}`)
+        : apiUrl(`/api/places/${encodeURIComponent(placeId)}/entries`);
 
     await authFetch(url, {
       method: editEntry ? "PUT" : "POST",
@@ -470,7 +469,7 @@ export default function TravelDiary({
 
   const fetchTrips = useCallback(async () => {
     try {
-      const res = await authFetch(`${API_BASE}/api/trips`);
+      const res = await authFetch(apiUrl("/api/trips"));
       const data: Trip[] = await res.json();
       setTrips(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } catch { /* ignore */ }
@@ -481,7 +480,7 @@ export default function TravelDiary({
   const handleCreateTrip = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTripName.trim()) return;
-    const res = await authFetch(`${API_BASE}/api/trips`, {
+    const res = await authFetch(apiUrl("/api/trips"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: newTripName.trim() }),
@@ -494,7 +493,7 @@ export default function TravelDiary({
   };
 
   const handleDeleteTrip = async (tripId: string) => {
-    const res = await authFetch(`${API_BASE}/api/trips/${encodeURIComponent(tripId)}`, { method: "DELETE" });
+    const res = await authFetch(apiUrl(`/api/trips/${encodeURIComponent(tripId)}`), { method: "DELETE" });
     if (res.ok) {
       if (selectedTripId === tripId) { setSelectedTripId(null); setShowTrips(false); }
       await fetchTrips();
@@ -502,7 +501,7 @@ export default function TravelDiary({
   };
 
   const handleRemoveEntryFromTrip = async (tripId: string, entryId: string) => {
-    const res = await authFetch(`${API_BASE}/api/trips/${encodeURIComponent(tripId)}/entries/${encodeURIComponent(entryId)}`, { method: "DELETE" });
+    const res = await authFetch(apiUrl(`/api/trips/${encodeURIComponent(tripId)}/entries/${encodeURIComponent(entryId)}`), { method: "DELETE" });
     if (res.ok) await fetchTrips();
   };
 
@@ -544,7 +543,7 @@ export default function TravelDiary({
   const handleAddTripItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTrip) return;
-    const res = await authFetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items`, {
+    const res = await authFetch(apiUrl(`/api/trips/${encodeURIComponent(selectedTrip.id)}/items`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ place: tripItemPlace.trim(), country: tripItemCountry.trim(), note: tripItemNote.trim(), category: tripItemCategory }),
@@ -562,7 +561,7 @@ export default function TravelDiary({
   const handleUpdateTripItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTrip || !editingTripItemId) return;
-    const res = await authFetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(editingTripItemId)}`, {
+    const res = await authFetch(apiUrl(`/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(editingTripItemId)}`), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ place: editTripItemPlace.trim(), country: editTripItemCountry.trim(), note: editTripItemNote.trim(), category: editTripItemCategory }),
@@ -575,7 +574,7 @@ export default function TravelDiary({
 
   const handleUpdateTripItemStatus = async (itemId: string, status: "pending" | "done") => {
     if (!selectedTrip) return;
-    const res = await authFetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(itemId)}`, {
+    const res = await authFetch(apiUrl(`/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(itemId)}`), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -585,7 +584,7 @@ export default function TravelDiary({
 
   const handleDeleteTripItem = async (itemId: string) => {
     if (!selectedTrip) return;
-    const res = await authFetch(`${API_BASE}/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(itemId)}`, { method: "DELETE" });
+    const res = await authFetch(apiUrl(`/api/trips/${encodeURIComponent(selectedTrip.id)}/items/${encodeURIComponent(itemId)}`), { method: "DELETE" });
     if (res.ok) await fetchTrips();
   };
 
@@ -612,7 +611,7 @@ export default function TravelDiary({
 
   const fetchWishlist = useCallback(async () => {
     try {
-      const res = await authFetch(`${API_BASE}/api/wishlist`);
+      const res = await authFetch(apiUrl("/api/wishlist"));
       const data: WishlistItem[] = await res.json();
       setWishlist(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } catch { /* ignore */ }
@@ -626,7 +625,7 @@ export default function TravelDiary({
   const handleAddWish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!wishPlace.trim() || !wishCountry.trim()) return;
-    const res = await authFetch(`${API_BASE}/api/wishlist`, {
+    const res = await authFetch(apiUrl("/api/wishlist"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ place: wishPlace.trim(), country: wishCountry.trim(), note: wishNote.trim() }),
@@ -639,7 +638,7 @@ export default function TravelDiary({
   };
 
   const handleUpdateWishStatus = async (id: string, status: WishlistItem["status"]) => {
-    const res = await authFetch(`${API_BASE}/api/wishlist/${encodeURIComponent(id)}`, {
+    const res = await authFetch(apiUrl(`/api/wishlist/${encodeURIComponent(id)}`), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -657,7 +656,7 @@ export default function TravelDiary({
   const handleUpdateWish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingWishId || !editWishPlace.trim() || !editWishCountry.trim()) return;
-    const res = await authFetch(`${API_BASE}/api/wishlist/${encodeURIComponent(editingWishId)}`, {
+    const res = await authFetch(apiUrl(`/api/wishlist/${encodeURIComponent(editingWishId)}`), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ place: editWishPlace.trim(), country: editWishCountry.trim(), note: editWishNote.trim() }),
@@ -669,7 +668,7 @@ export default function TravelDiary({
   };
 
   const handleDeleteWish = async (id: string) => {
-    const res = await authFetch(`${API_BASE}/api/wishlist/${encodeURIComponent(id)}`, { method: "DELETE" });
+    const res = await authFetch(apiUrl(`/api/wishlist/${encodeURIComponent(id)}`), { method: "DELETE" });
     if (res.ok) await fetchWishlist();
   };
 
@@ -689,7 +688,7 @@ export default function TravelDiary({
 
   const handleDeleteEntry = async (placeId: string, entryId: string) => {
     const res = await authFetch(
-      `${API_BASE}/api/places/${encodeURIComponent(placeId)}/entries/${encodeURIComponent(entryId)}`,
+      apiUrl(`/api/places/${encodeURIComponent(placeId)}/entries/${encodeURIComponent(entryId)}`),
       { method: "DELETE" }
     );
     if (res.ok) {
@@ -713,13 +712,13 @@ export default function TravelDiary({
   }, [places, favoriteIds]);
 
   const fetchPlaces = useCallback(async () => {
-    const res = await authFetch(`${API_BASE}/api/places`);
+    const res = await authFetch(apiUrl("/api/places"));
     const data: Place[] = await res.json();
     setPlaces(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
   }, []);
 
   useEffect(() => {
-    const eventSource = new EventSource(`${API_BASE}/api/events`, {
+    const eventSource = new EventSource(apiUrl("/api/events"), {
       withCredentials: true,
     });
 
@@ -755,7 +754,7 @@ export default function TravelDiary({
 
   const handleLogout = async () => {
     try {
-      await authFetch(`${API_BASE}/api/auth/logout`, { method: "POST" });
+      await authFetch(apiUrl("/api/auth/logout"), { method: "POST" });
     } catch (err) {
       // ignore network errors during logout
     } finally {
@@ -766,7 +765,7 @@ export default function TravelDiary({
   const handleAddPlace = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!city || !country) return;
-    const res = await authFetch(`${API_BASE}/api/places`, {
+    const res = await authFetch(apiUrl("/api/places"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ city, country }),
@@ -793,7 +792,7 @@ export default function TravelDiary({
 
   const deletePlaces = async (placeIds: string[]) => {
     for (const id of placeIds) {
-      await authFetch(`${API_BASE}/api/places/${encodeURIComponent(id)}`, { method: "DELETE" });
+      await authFetch(apiUrl(`/api/places/${encodeURIComponent(id)}`), { method: "DELETE" });
     }
     if (placeIds.includes(selectedPlaceId ?? "")) {
       setSelectedPlaceId(null);

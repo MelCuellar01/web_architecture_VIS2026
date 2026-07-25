@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import TravelDiary from "./TravelDiary";
 import { authFetch } from "../lib/authFetch";
+import { apiUrl } from "../lib/apiConfig";
 
 export default function Page() {
   const [loading, setLoading] = useState(true);
@@ -13,13 +14,13 @@ export default function Page() {
 
     const checkAuthAndLoad = async () => {
       try {
-        const authRes = await authFetch("http://localhost:3000/api/auth/me", { cache: "no-store" });
+        const authRes = await authFetch(apiUrl("/api/auth/me"), { cache: "no-store" });
 
         if (!authRes.ok) {
           return;
         }
 
-        const res = await authFetch("http://localhost:3000/api/places", { cache: "no-store" });
+        const res = await authFetch(apiUrl("/api/places"), { cache: "no-store" });
 
         if (!res.ok) {
           throw new Error("Failed to fetch places");

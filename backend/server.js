@@ -17,6 +17,7 @@ import cookieParser from 'cookie-parser';
 import { addSseClient, removeSseClient } from './utils/sse.js';
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const server = createServer(app);
 const io = new Server(server, {
@@ -28,6 +29,8 @@ const io = new Server(server, {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const frontendPublicDir = path.join(__dirname, 'public');
 
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -69,6 +72,51 @@ app.get('/api/events', authenticate, (req, res) => {
     removeSseClient(res);
     res.end();
   });
+});
+
+// Unknown API routes must return JSON instead of frontend HTML.
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
+app.use(
+  express.static(frontendPublicDir, {
+    setHeaders: (res, filePath) => {
+      // Next.js generates hashed assets inside _next/static.
+      if (
+        filePath.includes(
+          `${path.sep}_next${path.sep}static${path.sep}`
+        )
+      ) {
+        res.setHeader(
+          'Cache-Control',
+          'public, max-age=31536000, immutable'
+        );
+      }
+
+      // Exported HTML pages must always be checked for updates.
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    },
+  })
+);
+
+app.get('/{*splat}', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+
+  const normalizedPath = req.path.replace(/\/$/, '');
+  const htmlFile = normalizedPath
+    ? path.join(frontendPublicDir, `${normalizedPath}.html`)
+    : path.join(frontendPublicDir, 'index.html');
+
+  if (fs.existsSync(htmlFile)) {
+    return res.sendFile(htmlFile);
+  }
+
+  return res.sendFile(path.join(frontendPublicDir, 'index.html'));
 });
 
 io.on('connection', (socket) => {
