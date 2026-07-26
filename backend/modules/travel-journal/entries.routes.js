@@ -23,7 +23,14 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+    files: 10,
+  },
+});
+
 const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
@@ -45,10 +52,18 @@ const parseList = (value) => {
 const filePathFromUrl = (url) => {
   const baseDir = path.join(__dirname, '..', '..', 'public', 'uploads');
   const filePath = path.resolve(baseDir, url.replace(/^\/+/, ''));
-  // Ensure resolved path is within uploads directory to prevent directory traversal
-  if (!filePath.startsWith(baseDir)) {
+
+  const relative = path.relative(baseDir, filePath);
+
+  const isSafe =
+    relative &&
+    !relative.startsWith('..') &&
+    !path.isAbsolute(relative);
+
+  if (!isSafe) {
     throw new Error('Invalid file path');
   }
+
   return filePath;
 };
 

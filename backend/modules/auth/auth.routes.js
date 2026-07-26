@@ -3,12 +3,19 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { sendRegistrationConfirmationEmail } from '../../services/sendRegistrationConfirmationEmail.js';
+import rateLimit from 'express-rate-limit';
 
 const prisma = new PrismaClient();
 const router = express.Router();
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Register
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
   try {
     const { email, password } = req.body ?? {};
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
@@ -17,7 +24,7 @@ router.post('/register', async (req, res) => {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return res.status(409).json({ error: 'Email already in use' });
 
-    const hashed = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({ data: { email, password: hashed } });
 
     void sendRegistrationConfirmationEmail({ to: user.email }).catch((error) => {
