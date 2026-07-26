@@ -14,6 +14,16 @@ const registerLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Too many login attempts, please try again later.',
+  },
+});
+
 // Register
 router.post('/register', registerLimiter, async (req, res) => {
   try {
@@ -39,7 +49,7 @@ router.post('/register', registerLimiter, async (req, res) => {
 });
 
 // Login
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body ?? {};
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
