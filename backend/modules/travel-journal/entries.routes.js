@@ -31,19 +31,32 @@ const allowedMimeTypes = [
   'image/gif',
 ];
 
+const allowedExtensions = [
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+];
+
 const upload = multer({
   storage,
   limits: {
     fileSize: 5 * 1024 * 1024,
     files: 10,
   },
-  fileFilter: (req, file, cb) => {
-    if (allowedMimeTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image uploads are allowed.'));
-    }
-  },
+ fileFilter: (req, file, cb) => {
+  const extension = path.extname(file.originalname).toLowerCase();
+
+  if (
+    allowedMimeTypes.includes(file.mimetype) &&
+    allowedExtensions.includes(extension)
+  ) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image uploads are allowed.'));
+  }
+},
 });
 
 const asyncHandler = (fn) => (req, res, next) => {

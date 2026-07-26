@@ -16,7 +16,22 @@ const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-const filePathFromUrl = (url) => path.join(__dirname, '..', '..', 'public', url.replace(/^\/+/, ''));
+const publicDir = path.join(__dirname, '..', '..', 'public');
+
+const filePathFromUrl = (url) => {
+  const filePath = path.resolve(publicDir, url.replace(/^\/+/, ''));
+  const relativePath = path.relative(publicDir, filePath);
+
+  if (
+    !relativePath ||
+    relativePath.startsWith('..') ||
+    path.isAbsolute(relativePath)
+  ) {
+    throw new Error('Invalid file path');
+  }
+
+  return filePath;
+};
 
 const deleteFiles = (urls) => {
   for (const url of urls) {
