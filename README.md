@@ -6,6 +6,11 @@ WanderNotes ist eine persönliche Travel-Diary-App, die im Rahmen des Moduls **W
 
 Die Anwendung ermöglicht es, Reisen und besuchte Orte zu verwalten sowie Erinnerungen mit Tagebucheinträgen, Bildern und Bewertungen festzuhalten.
 
+## Live-Demo
+
+**URL:** https://wandernotes-mytraveldiary.de
+
+
 ## Funktionen
 
 - Benutzerregistrierung und Login
@@ -33,7 +38,9 @@ Die Anwendung ermöglicht es, Reisen und besuchte Orte zu verwalten sowie Erinne
 1. Repository klonen
 2. `.env.example` nach `.env` kopieren und die Werte anpassen
 3. Abhängigkeiten installieren
-4. Frontend und Backend starten
+4. Backend starten
+5. Frontend starten
+6. Die Anwendung im Browser öffnen
 
 ## Dokumentation
 
