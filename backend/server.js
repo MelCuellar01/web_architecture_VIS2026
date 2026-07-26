@@ -28,6 +28,7 @@ app.use(
           "'self'",
           "data:",
           "https://*.basemaps.cartocdn.com",
+          "https://unpkg.com",
         ],
         "connect-src": [
           "'self'",
