@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import helmet from 'helmet';
 import fs from 'fs';
 import path from 'path';
 import { createServer } from 'http';
@@ -16,15 +17,22 @@ import cookieParser from 'cookie-parser';
 import { addSseClient, removeSseClient } from './utils/sse.js';
 
 const app = express();
+app.disable('x-powered-by');
+app.use(helmet());
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const server = createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: 'http://localhost:3001',
-    credentials: true,
-  },
-});
+const io = new Server(
+  server,
+  process.env.NODE_ENV === 'production'
+    ? {}
+    : {
+        cors: {
+          origin: 'http://localhost:3001',
+          credentials: true,
+        },
+      }
+);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
