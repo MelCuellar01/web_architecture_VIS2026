@@ -24,10 +24,20 @@ app.use(
       useDefaults: true,
       directives: {
         "script-src": ["'self'", "'unsafe-inline'"],
+        "img-src": [
+          "'self'",
+          "data:",
+          "https://*.basemaps.cartocdn.com",
+        ],
+        "connect-src": [
+          "'self'",
+          "https://nominatim.openstreetmap.org",
+        ],
       },
     },
   })
 );
+
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const server = createServer(app);
