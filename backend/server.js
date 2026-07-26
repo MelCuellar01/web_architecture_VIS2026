@@ -18,7 +18,16 @@ import { addSseClient, removeSseClient } from './utils/sse.js';
 
 const app = express();
 app.disable('x-powered-by');
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "script-src": ["'self'", "'unsafe-inline'"],
+      },
+    },
+  })
+);
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const server = createServer(app);
