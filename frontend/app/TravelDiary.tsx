@@ -101,7 +101,7 @@ function getImageUrls(entry: any): string[] {
     .filter(Boolean)
     .map((u) => {
       if (u.startsWith("http://") || u.startsWith("https://")) return u;
-      if (u.startsWith("/uploads")) return `${apiUrl(u)}`;
+      if (u.startsWith("/uploads")) return apiUrl(u);
       return u;
     });
 }
@@ -192,7 +192,14 @@ function ImageCarousel({ urls, alt }: { urls: string[]; alt: string }) {
           </button>
         )}
         <div className="carousel-frame">
-          <img src={urls[idx]} alt={alt} className="carousel-img" />
+          <img
+            src={urls[idx]}
+            alt={alt}
+            className="carousel-img"
+            loading="lazy"
+            width={1200}
+            height={800}
+          />
         </div>
         {multi && (
           <button className="carousel-arrow carousel-right" onClick={next} aria-label="Next image">
